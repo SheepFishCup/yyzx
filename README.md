@@ -8,9 +8,9 @@
 
 #### 目标用户：
 
--   	医疗/养老机构工作人员（如护士、管理员）
--   	客户（入住人员）
--   	系统管理员
+  医疗/养老机构工作人员（如护士、管理员）
+  客户（入住人员）
+  系统管理员
 
 **后端技术：Spring Boot2+MySQL+MyBatis-Plus+Druid+Lombok+Swagger2+JWT+Maven**
 
