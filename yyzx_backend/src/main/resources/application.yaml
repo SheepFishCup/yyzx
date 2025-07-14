@@ -10,6 +10,7 @@ spring:
     url: jdbc:mysql://localhost:3306/nursinghome?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
     username: root
     password: 123456
+    type: com.alibaba.druid.pool.DruidDataSource
 
 # springfox swagger 不支持spring2.7以上的版本
 # springfox使用的匹配路径默认是ant_path_matcher，但是spring2.7以上版本默认是path_matching
