@@ -10,6 +10,4 @@ public interface BackdownMapper extends BaseMapper<Backdown> {
     Page<BackdownVo> selectBackdownVo(@Param("page") Page<BackdownVo> page,
                                       @Param("userId") Integer userId
                                       ) throws Exception;
-
-
 }

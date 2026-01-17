@@ -16,6 +16,7 @@ import com.cqupt.mapper.RoleMapper;
 import com.cqupt.mapper.RoleMenuMapper;
 import com.cqupt.mapper.UserMapper;
 import com.cqupt.pojo.Menu;
+import com.cqupt.pojo.RoleMenu;
 import com.cqupt.pojo.User;
 import com.cqupt.service.UserService;
 import com.cqupt.utils.ResultVo;
@@ -71,7 +72,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                         .setId(user.getId().toString())
                         .setClaims(map)
                         .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))//24小时
-                        .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, "cqupt123456")
+                        .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, "cqupt123456")//签名
                         .compact();
 
                 return ResultVo.ok(user, token);

@@ -6,6 +6,7 @@ package com.cqupt.config;
  * @description web配置
  */
 
+import com.cqupt.interceptor.CheckTokenInterceptor;
 import com.cqupt.utils.CustomDateDeserializer;
 import com.cqupt.utils.DateConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,31 +25,27 @@ import java.util.List;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-    /**
-     * 配置拦截器链
-     * @param registry 拦截器注册器，用于添加或移除拦截器
-     */
+    @Autowired
+    private CheckTokenInterceptor checkTokenInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        WebMvcConfigurer.super.addInterceptors(registry);
-    }
-    /**
-     * 添加日期格式转换器
-     * @param registry 格式化注册器，用于注册类型转换器
-     */
-    @Override
-    public void addFormatters(FormatterRegistry registry) {
-        registry.addConverter(new DateConverter());
+        registry.addInterceptor(checkTokenInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/user/login", "/swagger-resources/**", "/doc.html", "/webjars/**",
+                        "/v3/api-docs/**", "swagger-ui.html", "/images/**");
     }
 
-    /**
-     * 配置静态资源映射
-     * @param registry 资源处理器注册器，用于注册资源路径和实际存储位置
-     */
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new DateConverter());// 日期转换器
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/yyzx/images/**")
                 .addResourceLocations("file:D:/BaiduNetdiskDownload/2025实训/yyzx_backend/src/main/resources/static/images/");
     }
+    //登录拦截器
 
 }

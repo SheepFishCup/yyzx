@@ -52,7 +52,7 @@ public class DateConverter implements Converter<String, Date> {
     }
 
     public Date parseDate(String dateStr, String format) {
-        Date date=null;
+        Date date = null;
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat(format);
             date = dateFormat.parse(dateStr);

@@ -12,5 +12,4 @@ public interface OutwardMapper extends BaseMapper<Outward> {
     Page<OutwardVo> selectOutwardVo(@Param("page") Page<OutwardVo> page,
                                     @Param("userId") Integer userId) throws Exception;
 
-
 }

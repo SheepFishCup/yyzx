@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import store from "@/store"
 // 这里前后位置可以不一样
 import LoginView from '../views/Login.vue'
-
+// 引入工具类
 const routes = [
     {
         path: '/:catchAll(.*)',
@@ -16,7 +16,7 @@ const routes = [
     },
     {
     path: "/",
-    redirect: '/login'
+    redirect: '/login'//默认跳转
     },
 
 ]

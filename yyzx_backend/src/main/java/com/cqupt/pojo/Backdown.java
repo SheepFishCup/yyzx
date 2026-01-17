@@ -59,4 +59,5 @@ public class Backdown implements Serializable {
     @ApiModelProperty(value = "审批时间")
     @TableField(value = "audittime")
     private Date auditTime;
+
 }

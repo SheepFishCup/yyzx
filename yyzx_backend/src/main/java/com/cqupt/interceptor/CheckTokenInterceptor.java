@@ -40,7 +40,6 @@ public class CheckTokenInterceptor implements HandlerInterceptor {
             //验证token是否正确
             Jws<Claims> claimsJws = parser.parseClaimsJws(token);
         }
-
         return true;
     }
 }

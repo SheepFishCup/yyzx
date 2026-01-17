@@ -53,8 +53,7 @@ public class BedDetailsServiceImpl extends ServiceImpl<BedDetailsMapper, BedDeta
             return ResultVo.fail("该床位已使用");
         }
         // 2、修改客户旧床位记录（beddetails)，is_deleted = 1，结束的时间设置为当前时间
-        BedDetails bedDetails = new BedDetails();
-        bedDetails.setId(exchangeDTO.getId());
+        BedDetails bedDetails = bedDetailsMapper.selectById(exchangeDTO.getId());
         bedDetails.setIsDeleted(1);
         bedDetails.setEndDate(new Date());
         int row1=bedDetailsMapper.updateById(bedDetails);
@@ -63,8 +62,11 @@ public class BedDetailsServiceImpl extends ServiceImpl<BedDetailsMapper, BedDeta
         newBedDetails.setIsDeleted(0);
         newBedDetails.setCustomerId(exchangeDTO.getCustomerId());
         newBedDetails.setBedId(exchangeDTO.getNewBedId());
+
         newBedDetails.setStartDate(new Date());
-        newBedDetails.setEndDate(newBedDetails.getEndDate());
+        // 将新床位的结束时间设置为原来床位的结束时间
+        newBedDetails.setEndDate(bedDetails.getEndDate());
+
         newBedDetails.setBedDetails(exchangeDTO.getBuildingNo()+"#"+bed.getBedNo());
         int row2=bedDetailsMapper.insert(newBedDetails);
         // 4、修床位的状态改委空闲， bed_status = 1

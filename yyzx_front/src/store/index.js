@@ -2,6 +2,7 @@ import { createStore } from "vuex"
 import { getSessionStorage, setSessionStorage } from "../utils/common.js"
 
 export default createStore({
+    // 存储数据
     state: {
         tabs: [
             
@@ -11,6 +12,7 @@ export default createStore({
         // 获取菜单列表
         menus:getSessionStorage('menuList') || [],
     },
+    // 获取数据
     getters: {
         // 获取所有的按钮
         tabs(state) {
@@ -21,7 +23,7 @@ export default createStore({
         menus(state) {
             return state.menus;
         },
-        
+        // 根据url获取菜单名称
         getMenuNameByUrl(state) {
             return (url) => {
               const menu = state.menus.find(menu => menu.url === url);

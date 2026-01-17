@@ -34,8 +34,7 @@ public class RoomController {
     @GetMapping("/findCwsyBedVo")
     @ApiOperation("查询床位示意图")
     @ApiImplicitParams({
-            @ApiImplicitParam(dataType="String", name="floor",
-                    value="楼层",required = true)
+            @ApiImplicitParam(dataType="String", name="floor", value="楼层",required = true)
     })
     public ResultVo<CwsyBedVo> findCwsyBedVo(String floor) throws Exception {
         return roomService.findCswyBedVo(floor);
