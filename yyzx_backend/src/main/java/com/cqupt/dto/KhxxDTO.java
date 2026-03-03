@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @ApiModel(value = "KhxxDTO-客户信息查询条件", description = "")
 public class KhxxDTO {
     @ApiModelProperty(value = "客户编号")
-    private Integer customerId;
+    private Long customerId;
 
     @ApiModelProperty(value = "客户姓名")
     private String customerName;
@@ -25,7 +25,7 @@ public class KhxxDTO {
     private Integer manType;
 
     @ApiModelProperty(value = "系统健康管家(护工)")
-    private Integer userId;
+    private Long userId;
 
     @ApiModelProperty(value = "页码")
     private Integer pageSize;

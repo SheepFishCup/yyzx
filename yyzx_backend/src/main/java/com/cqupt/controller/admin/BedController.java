@@ -1,4 +1,4 @@
-package com.cqupt.controller;
+package com.cqupt.controller.admin;
 /*
  * Project: yyzx_backend
  * @author yyr
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+//@RequestMapping("/admin/bed")
 @RequestMapping("/bed")
 @Api(tags = "床位管理") // swagger分组
 @CrossOrigin // 解决跨域问题
@@ -32,6 +33,7 @@ public class BedController {
     @GetMapping("/findBed")
     @ApiOperation("查询床位详情")
     public ResultVo<List<Bed>> findBed(Bed bed) {
+
         //查询条件的包装器
         QueryWrapper queryWrapper = new QueryWrapper();
         if (bed.getRoomNo() != null){

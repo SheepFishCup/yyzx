@@ -46,9 +46,8 @@ public class BackdownServiceImpl extends ServiceImpl<BackdownMapper, Backdown> i
         return ResultVo.ok("审批成功");
     }
 
-
     @Override
-    public ResultVo delBackdown(Integer id) throws Exception {
+    public ResultVo delBackdown(Long id) throws Exception {
         UpdateWrapper<Backdown> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id",id);
         updateWrapper.set("is_deleted",1);

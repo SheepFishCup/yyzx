@@ -19,13 +19,13 @@ import java.util.Date;
 public class JacksonConfig {
 
     @Autowired
-    private CustomDateDeserializer dateDeserializer; // 你的自定义反序列化器
+    private CustomDateDeserializer dateDeserializer;//自定义日期转换器
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer customizer() {
         return builder -> {
             SimpleModule module = new SimpleModule();
-            module.addDeserializer(Date.class, dateDeserializer);
+            module.addDeserializer(Date.class, dateDeserializer);//添加自定义日期转换器
             builder.modules(module);
         };
     }

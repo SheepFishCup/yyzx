@@ -19,6 +19,6 @@ public class BackdownDTO {
     private Integer pageSize;
 
     @ApiModelProperty(value = "用户编号")
-    private Integer userId;
+    private Long userId;
 
 }

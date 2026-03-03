@@ -12,5 +12,5 @@ public interface BackdownService extends IService<Backdown> {
 
     ResultVo examineBackdown(Backdown backdown) throws Exception;
 
-    ResultVo delBackdown(Integer id) throws Exception;
+    ResultVo delBackdown(Long id) throws Exception;
 }

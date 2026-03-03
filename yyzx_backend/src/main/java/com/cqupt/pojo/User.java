@@ -7,11 +7,13 @@ package com.cqupt.pojo;
  */
 
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -27,20 +29,21 @@ public class User implements Serializable {
 
     @ApiModelProperty(value = "主键")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "创建时间")
-    @TableField(value = "create_time")
+    @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 
     @ApiModelProperty(value = "创建者")
-    private Integer createBy;
+    private Long createBy;
 
     @ApiModelProperty(value = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
 
     @ApiModelProperty(value = "更新者")
-    private Integer updateBy;
+    private Long updateBy;
 
     @ApiModelProperty(value = "逻辑删除标记(0:显示，1:隐藏)")
     private Integer isDeleted;
@@ -63,7 +66,7 @@ public class User implements Serializable {
     @ApiModelProperty(value = "手机号")
     private String phoneNumber;
 
-    @ApiModelProperty(value = "系统角色编号(1-管理员，2-健康管家)")
+    @ApiModelProperty(value = "系统角色编号(1-管理员，2-健康管家 3-用户)")
     private Integer roleId;
 
     @ApiModelProperty(value = "当前角色的菜单")

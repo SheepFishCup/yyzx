@@ -1,4 +1,4 @@
-package com.cqupt.controller;
+package com.cqupt.controller.admin;
 /*
  * Project: yyzx_backend
  * @author yyr
@@ -7,11 +7,10 @@ package com.cqupt.controller;
  */
 
 import com.cqupt.pojo.Food;
-import com.cqupt.pojo.Room;
 import com.cqupt.service.FoodService;
-import com.cqupt.utils.ResultVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
+//@RequestMapping("/admin/food")
 @RequestMapping("/food")
 @Api(tags = "食物管理") // swagger分组
 @CrossOrigin

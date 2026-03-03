@@ -8,5 +8,5 @@ import org.apache.ibatis.annotations.Param;
 
 public interface NurseRecordMapper extends BaseMapper<NurseRecord> {
     Page<NurseRecordsVo> selectNurseRecordsVo(@Param("page") Page<NurseRecordsVo> page,
-                                              @Param("customerId") Integer customerId);
+                                              @Param("customerId") Long customerId);
 }

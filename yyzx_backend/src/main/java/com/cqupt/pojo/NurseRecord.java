@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -26,13 +27,13 @@ public class NurseRecord implements Serializable {
 
     @ApiModelProperty(value = "主键")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "逻辑删除标记（0：显示；1：隐藏）")
     private Integer isDeleted;
 
     @ApiModelProperty(value = "客户ID")
-    private Integer customerId;
+    private Long customerId;
 
     @ApiModelProperty(value = "护理项目ID")
     private Integer itemId;
@@ -47,5 +48,5 @@ public class NurseRecord implements Serializable {
     private Integer nursingCount;
 
     @ApiModelProperty(value = "护理人员ID")
-    private Integer userId;
+    private Long userId;
 }

@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -23,7 +24,7 @@ public class Customer implements Serializable {
     private static final long serialVersionUID = 1L;
     @ApiModelProperty(value = "主键")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "逻辑删除标记（0：显示；1：隐藏）")
     private Integer isDeleted;
@@ -80,11 +81,14 @@ public class Customer implements Serializable {
     private String filepath;
 
     @ApiModelProperty(value = "关联系统健康管家(护工)  无管家设置  -1")
-    private Integer userId;
+    private Long userId;
 
     @ApiModelProperty(value = "护理等级")
     private Integer levelId;
 
     @ApiModelProperty(value = "家属")
     private String familyMember;
+
+//    @ApiModelProperty(value = "微信用户唯一标识")
+//    private String openid;
 }

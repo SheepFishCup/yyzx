@@ -11,5 +11,5 @@ public interface CustomerMapper extends BaseMapper<Customer> {
     Page<KhxxCustomerVo> selectPageVo(@Param("page") Page<KhxxCustomerVo> page,
                                       @Param("customerName") String customerName,
                                       @Param("manType") Integer manType,
-                                      @Param("userId") Integer userId);
+                                      @Param("userId") Long userId);
 }

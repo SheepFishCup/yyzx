@@ -67,7 +67,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ResultVo removeCustomerLevelAndItem(Integer levelId, Integer customerId) throws Exception {
+    public ResultVo removeCustomerLevelAndItem(Integer levelId, Long customerId) throws Exception {
 //        Customer customer = new Customer();
 //        customer.setId(customerId);
 //        customer.setLevelId(null);
@@ -91,7 +91,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
         UpdateWrapper uw2=new UpdateWrapper();
         uw2.set("is_deleted",1);
         uw2.eq("level_id",levelId);
-        uw2.eq("custormer_id",customerId);
+        uw2.eq("customer_id",customerId);
 //        Customernurseitem customernurseitem=new Customernurseitem();
 //        customernurseitem.setIsDeleted(1);
         int row2=customerNurseItemMapper.update(null,uw2);
@@ -128,11 +128,11 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
     }
 
     @Override
-    public ResultVo isIncludesItemCustomer(Integer itemId, Integer customerId) throws Exception {
+    public ResultVo isIncludesItemCustomer(Integer itemId, Long customerId) throws Exception {
 //        QueryWrapper<CustomerNurseItem> queryWrapper = new QueryWrapper();
 //        queryWrapper.eq("item_id", itemId);
 //        //原数据库字段为custormer_id
-//        queryWrapper.eq("custormer_id", customerId);
+//        queryWrapper.eq("customer_id", customerId);
 //        queryWrapper.eq("is_deleted", 0);
 //        int row = customerNurseItemService.count(queryWrapper);
 //        if (row > 0){
@@ -143,7 +143,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
 //        return ResultVo.fail("用户未配置该护理项目");
         QueryWrapper<CustomerNurseItem> queryWrapper = new QueryWrapper();
         queryWrapper.eq("item_id", itemId);
-        queryWrapper.eq("custormer_id", customerId);
+        queryWrapper.eq("customer_id", customerId);
         queryWrapper.eq("is_deleted", 0);
         int row = customerNurseItemMapper.selectCount(queryWrapper);
         if (row > 0){
@@ -155,7 +155,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ResultVo removeCustomerItem(Integer id) throws Exception {
+    public ResultVo removeCustomerItem(Long id) throws Exception {
         CustomerNurseItem customerNurseItem =new CustomerNurseItem();
         customerNurseItem.setId(id);
         customerNurseItem.setIsDeleted(1);

@@ -1,4 +1,4 @@
-package com.cqupt.controller;
+package com.cqupt.controller.admin;
 /*
  * Project: yyzx_backend
  * @author yyr
@@ -12,10 +12,14 @@ import com.cqupt.service.CustomerPreferenceService;
 import com.cqupt.utils.ResultVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+
+@Slf4j
 @RestController
+//@RequestMapping("/admin/customerpreference")
 @RequestMapping("/customerpreference")
 @Api(tags = "顾客喜好管理") // swagger分组
 @CrossOrigin
@@ -26,6 +30,7 @@ public class CustomerPreferenceController {
     @PostMapping("/addCustomerpreference")
     @ApiOperation("为顾客单个添加喜好")
     public ResultVo addCustomerpreference(CustomerPreference customerPreference) throws Exception {
+        log.info("添加顾客喜好,参数为：{}", customerPreference);
         customerPreferenceService.save(customerPreference);
         return ResultVo.ok("添加成功");
     }
@@ -33,13 +38,15 @@ public class CustomerPreferenceController {
     @PostMapping("/updateCustomerpreference")
     @ApiOperation("为顾客单个修改喜好")
     public ResultVo updateCustomerpreference(CustomerPreference customerPreference) throws Exception {
+        log.info("修改顾客喜好,参数为：{}", customerPreference);
         customerPreferenceService.updateById(customerPreference);
         return ResultVo.ok("修改成功");
     }
 
     @GetMapping("/removeCustomerpreference")
     @ApiOperation("为顾客单个删除喜好")
-    public ResultVo removeCustomerpreference(Integer id) throws Exception {
+    public ResultVo removeCustomerpreference(Long id) throws Exception {
+        log.info("删除顾客喜好,参数为：{}", id);
         customerPreferenceService.removeById(id);
         return ResultVo.ok("删除成功");
     }
@@ -47,6 +54,7 @@ public class CustomerPreferenceController {
     @GetMapping("/listCustomerpreference")
     @ApiOperation("查询顾客喜好")
     public ResultVo listCustomerpreference(CustomerPreferenceDTO customerPreferenceDTO) throws Exception {
+        log.info("查询顾客喜好,参数为：{}", customerPreferenceDTO);
         return customerPreferenceService.listCustomerPreferenceVoPage(customerPreferenceDTO);
     }
 

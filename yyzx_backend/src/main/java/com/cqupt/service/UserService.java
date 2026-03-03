@@ -17,5 +17,5 @@ public interface UserService extends IService<User> {
 
     ResultVo updateUser(User user) throws Exception;
 
-    ResultVo deleteUser(Integer id) throws Exception;
+    ResultVo deleteUser(Long id) throws Exception;
 }

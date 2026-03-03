@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -28,15 +29,13 @@ public class CustomerNurseItem implements Serializable {
 
     @ApiModelProperty(value = "主键")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "护理项目编号")
     private Integer itemId;
 
-//    数据库字段为custormerId
     @ApiModelProperty(value = "客户编号")
-    @TableField("custormer_id")
-    private Integer customerId;
+    private Long customerId;
 
     @ApiModelProperty(value = "护理级别编号")
     private Integer levelId;

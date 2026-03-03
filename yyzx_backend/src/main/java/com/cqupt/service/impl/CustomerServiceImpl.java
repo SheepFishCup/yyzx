@@ -52,7 +52,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
         }
         //生成客户信息
         customer.setIsDeleted(0);
-        customer.setUserId(-1);//默认无管家
+        customer.setUserId((long) -1);//默认无管家
         int row1=customerMapper.insert(customer);
         //生成入住详细信息
         BedDetails bedDetails = new BedDetails();
@@ -77,7 +77,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ResultVo removeCustomer(Integer id, Integer bedId) throws Exception {
+    public ResultVo removeCustomer(Long id, Integer bedId) throws Exception {
         //修改用户is_delete=1 不显示
         Customer customer = new Customer();
 //        Customer customer = customerMapper.selectById(id);

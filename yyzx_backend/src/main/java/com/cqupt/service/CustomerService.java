@@ -13,7 +13,7 @@ public interface CustomerService extends IService<Customer> {
     // 客户信息添加
     ResultVo addCustomer(Customer customer) throws Exception;
     // 客户信息删除及床位信息
-    ResultVo removeCustomer(Integer id,Integer bedId) throws Exception;
+    ResultVo removeCustomer(Long id,Integer bedId) throws Exception;
     // 客户信息修改
     ResultVo editCustomer(Customer customer) throws Exception;
 }

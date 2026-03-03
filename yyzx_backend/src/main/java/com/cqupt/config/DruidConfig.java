@@ -15,7 +15,6 @@ import java.util.Map;
 
 @Configuration
 public class DruidConfig {
-    
     @Bean
     @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource druidDataSource() {
@@ -25,16 +24,24 @@ public class DruidConfig {
         dataSource.setPassword("123456");
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
 
-        dataSource.setInitialSize(5);//初始化连接数
-        dataSource.setMinIdle(5);//最小连接数
-        dataSource.setMaxActive(200);//最大连接数
+        dataSource.setInitialSize(1);//初始化连接数
+        dataSource.setMinIdle(1);//最小连接数
+        dataSource.setMaxActive(8);//最大连接数
         dataSource.setMaxWait(60000);//等待连接超时时间
-        dataSource.setTimeBetweenEvictionRunsMillis(60000);
-        dataSource.setMinEvictableIdleTimeMillis(300000);
-        dataSource.setValidationQuery("SELECT 1");
-        dataSource.setTestWhileIdle(true);
-        dataSource.setTestOnBorrow(false);
-        dataSource.setTestOnReturn(false);
+        dataSource.setTimeBetweenEvictionRunsMillis(60000);//配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+        dataSource.setPoolPreparedStatements(true);//配置是否缓存preparedStatement，也就是PSCache
+        dataSource.setMinEvictableIdleTimeMillis(300000);//配置连接在池中的最小生存时间
+        dataSource.setValidationQuery("SELECT 1");//配置检测连接是否有效的sql
+        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);//配置了最大连接数，超过配置的maxActive之后，extraPreparedStatements会自动关闭
+        dataSource.setTestWhileIdle(true);//配置检测连接是否有效
+        dataSource.setTestOnBorrow(false);//配置连接池中连接是否被使用前校验
+        dataSource.setTestOnReturn(false);//配置连接池中连接是否被使用后校验
+
+        // 添加防止内存泄漏的关键配置
+        dataSource.setRemoveAbandoned(true); // 删除泄露的连接
+        dataSource.setRemoveAbandonedTimeout(1800); // 连接泄露超时时间(秒)
+        dataSource.setLogAbandoned(true); // 记录泄露日志
+
         return dataSource;
     }
     
@@ -52,7 +59,7 @@ public class DruidConfig {
         // 是否可以重置数据
         initParams.put("resetEnable", "false");
         
-        bean.setInitParameters(initParams);
+        bean.setInitParameters(initParams);//设置初始化参数
         return bean;
     }
     

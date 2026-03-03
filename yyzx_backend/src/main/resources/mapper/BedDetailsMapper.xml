@@ -35,7 +35,7 @@
                 and c.customer_name LIKE CONCAT('%',#{bedDetailsDTO.customerName},'%')
             </if>
             <if test="bedDetailsDTO !=null and bedDetailsDTO.startDate != null and bedDetailsDTO.endDate != null">
-                and b.start_date BETWEEN #{bedDetailsDTO.startDateb} AND #{bedDetailsDTO.endDate}
+                and b.start_date BETWEEN #{bedDetailsDTO.startDate} AND #{bedDetailsDTO.endDate}
             </if>
             <if test="bedDetailsDTO !=null and bedDetailsDTO.isDeleted != null">
                 and b.is_deleted=#{bedDetailsDTO.isDeleted}

@@ -43,7 +43,7 @@ public class OutwardServiceImpl extends ServiceImpl<OutwardMapper, Outward> impl
     }
 
     @Override
-    public ResultVo delOutward(Integer id) throws Exception {
+    public ResultVo delOutward(Long id) throws Exception {
         UpdateWrapper<Outward> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id",id);
         updateWrapper.set("is_deleted",1);

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -25,7 +26,7 @@ public class Backdown implements Serializable {
 
     @ApiModelProperty(value = "主键")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "备注")
     private String remarks;
@@ -34,7 +35,7 @@ public class Backdown implements Serializable {
     private Integer isDeleted;
 
     @ApiModelProperty(value = "客户ID")
-    private Integer customerId;
+    private Long customerId;
 
     @ApiModelProperty(value = "退住时间")
     @TableField(value = "retreattime")

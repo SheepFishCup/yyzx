@@ -21,7 +21,7 @@ public class ExchangeDTO {
     private Integer id;
 
     @ApiModelProperty(value = "客户编号")
-    private Integer customerId;
+    private Long customerId;
 
     @ApiModelProperty(value = "新楼号")
     private String buildingNo;

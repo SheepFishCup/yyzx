@@ -12,5 +12,5 @@ public interface NurseRecordService extends IService<NurseRecord> {
 
     ResultVo <Page<NurseRecordsVo>> queryNurseRecordsVo(NurseRecordDTO nurseRecordDTO) throws Exception;
 
-    ResultVo removeCustomerRecord(Integer id) throws Exception;
+    ResultVo removeCustomerRecord(Long id) throws Exception;
 }

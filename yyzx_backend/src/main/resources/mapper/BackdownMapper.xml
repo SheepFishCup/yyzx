@@ -18,7 +18,7 @@
         id,remark, is_deleted,customer_id, retreattime, retreattype, retreatreason, auditstatus, auditperson, audittime
     </sql>
     <select id="selectBackdownVo" resultType="BackdownVo">
-    SELECT
+    SELECT distinct
         bdn.id,
         bdn.remarks,
         bdn.is_deleted,
@@ -34,15 +34,12 @@
         cus.customer_name,
         cus.checkin_date
     FROM
-        backdown bdn,
-        customer cus,
-        beddetails bd,
-        user u
+        backdown bdn
+        INNER JOIN customer cus ON bdn.customer_id = cus.id
+        INNER JOIN beddetails bd ON bdn.customer_id = bd.customer_id AND bd.is_deleted = 0  <!-- 添加beddetails的删除条件 -->
+        INNER JOIN user u ON cus.user_id = u.id
     <where>
-        bdn.customer_id=cus.id
-        And bdn.customer_id=bd.customer_id
-        And cus.user_id=u.id
-        And bdn.is_deleted=0
+        bdn.is_deleted=0
         <if test="userId != null and userId !=''">
             and cus.user_id=#{userId}
         </if>

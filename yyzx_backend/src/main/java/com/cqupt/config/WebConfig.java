@@ -18,6 +18,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Date;
@@ -27,25 +28,28 @@ import java.util.List;
 public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private CheckTokenInterceptor checkTokenInterceptor;
-
+    //登录拦截器
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(checkTokenInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login", "/swagger-resources/**", "/doc.html", "/webjars/**",
-                        "/v3/api-docs/**", "swagger-ui.html", "/images/**");
+                .excludePathPatterns("/user/login",
+                        "/swagger-resources/**", "/doc.html", "/webjars/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/swagger-ui/index.html",
+                        "/images/**");
     }
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
         registry.addConverter(new DateConverter());// 日期转换器
     }
-
+    //静态资源映射
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/yyzx/images/**")
                 .addResourceLocations("file:D:/BaiduNetdiskDownload/2025实训/yyzx_backend/src/main/resources/static/images/");
     }
-    //登录拦截器
-
 }

@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @ApiModel(value = "CustomerNurseItemDTO-客户护理项目查询条件", description = "")
 public class CustomerNurseItemDTO {
     @ApiModelProperty(value = "客户编号")
-    private Integer customerId;
+    private Long customerId;
     @ApiModelProperty(value = "页码")
     private Integer pageSize;
 }

@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @ApiModel(value = "CustomerPreferenceDTO-顾客喜好查询条件", description = "")
 public class CustomerPreferenceDTO {
     @ApiModelProperty(value = "喜好编号")
-    private Integer customerPreferenceId;
+    private Long customerPreferenceId;
     @ApiModelProperty(value = "顾客姓名")
     private String customerName;
     @ApiModelProperty(value = "页码")

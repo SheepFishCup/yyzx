@@ -1,7 +1,7 @@
 <template>
     <div class="login-bg">
         <div class="login">
-			<div class="message">东软颐养中心</div>
+			<div class="message">颐养中心</div>
 			<div id="darkbannerwrap"></div>
             <form >
                 <input name="username"  v-model="loginForm.username" placeholder="用户名" type="text" >

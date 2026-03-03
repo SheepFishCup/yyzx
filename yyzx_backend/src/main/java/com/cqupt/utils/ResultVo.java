@@ -65,7 +65,7 @@ public class ResultVo<T> {
         ResultVo<T> resultVo = new ResultVo<>();
         resultVo.setData(data);
         resultVo.setMessage(message);
-        resultVo.setFlag(true);
+        resultVo.setFlag(false);
         return resultVo;
     }
 
@@ -73,6 +73,13 @@ public class ResultVo<T> {
     public static ResultVo error(Exception e){
         ResultVo resultVo = new ResultVo();
         resultVo.setMessage("系统发送了异常:"+e.getMessage());
+        resultVo.setFlag(false);
+        return resultVo;
+    }
+
+    public static ResultVo error(String message) {
+        ResultVo resultVo = new ResultVo();
+        resultVo.setMessage("系统发送了异常:"+message);
         resultVo.setFlag(false);
         return resultVo;
     }

@@ -14,11 +14,11 @@ public interface CustomerNurseItemService extends IService<CustomerNurseItem> {
 
     ResultVo addItemToCustomer(List<CustomerNurseItem> customerNurseItems) throws Exception;
 
-    ResultVo removeCustomerLevelAndItem(Integer levelId, Integer customerId) throws Exception;
+    ResultVo removeCustomerLevelAndItem(Integer levelId, Long customerId) throws Exception;
 
     ResultVo enewNurseItem(CustomerNurseItem customerNurseItem) throws Exception;
 
-    ResultVo isIncludesItemCustomer(Integer itemId, Integer customerId) throws Exception;
+    ResultVo isIncludesItemCustomer(Integer itemId, Long customerId) throws Exception;
 
-    ResultVo removeCustomerItem(Integer id) throws Exception;
+    ResultVo removeCustomerItem(Long id) throws Exception;
 }
