@@ -1,7 +1,7 @@
 <template>
     <el-aside id="asideNav" width="200px">
     <div class="logo-name" >
-      <p>东软颐养中心</p>
+      <p>颐养中心</p>
       <img src="../assets/logo.png" class="logo-png"/>
     </div>
       <el-menu

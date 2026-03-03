@@ -15,16 +15,18 @@ function findBedDetailsList(data){
 }
 //更新床位详情信息-床位开始使用时间
 function updateDetailsStartDate(data){
-    return http.post('beddetails/updateBedDetails',data)
+    // return http.post('beddetails/updateBedDetails',data)
+    return http.put('/beddetails',data,{ useJson: true })
 }
 //床位调换
 function exchangeBed(data){
-    return http.post('beddetails/exchangeBed',data)
+    return http.post('beddetails/exchangeBed',data,{ useJson: true })
 }
 
 //删除床位详情
 function delBedDetails(data){
-    return http.get('/beddetails/delBedDetails',{params:data})
+    // return http.delete('/beddetails/delBedDetails',{params:data})
+    return http.delete('/beddetails',{params:data})
 }
 export{
     findCwsyBedVo,

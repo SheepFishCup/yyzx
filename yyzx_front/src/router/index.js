@@ -22,7 +22,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(process.env.BASE_URL ||'/'),
   routes
 })
 
@@ -82,7 +82,7 @@ router.beforeEach((to, from, next) => {
     //第一次访问登录页面时，并没有菜单列表，此时也动态加载了路由并让length变成了3，导致登录后不会再执行初始化加载路由,加上其他额外条件
     // 一开始只有3条初始路由 404,login,redirect
     // console.log("router.getRoutes()===========>",router.getRoutes()); // 3 -> 21
-    if(router.getRoutes().length==3 && menuArray!=null && menuArray.length>0 && menuArray!='undefined') {
+    if(router.getRoutes().length === 3 && Array.isArray(menuArray) && menuArray.length > 0) {
       //需要动态加载路由信息，此时有了路由的路径
       initRouter();
       next({path: to.path});

@@ -350,10 +350,11 @@
       },
       //点击护理 -打开内层抽屉
       nurse(row) {
+        console.log('row 数据:', row);
         this.innerDrawer.openFlag = true;
         //构建参数数据
         this.$nextTick(() => {
-          this.innerDrawer.nurseForm.customerId = row.custormerId;
+          this.innerDrawer.nurseForm.customerId = row.customerId;
           this.innerDrawer.nurseForm.itemId = row.itemId;
           this.innerDrawer.nurseForm.customerName = row.customerName;
           this.innerDrawer.nurseForm.itemName = row.nursingName;

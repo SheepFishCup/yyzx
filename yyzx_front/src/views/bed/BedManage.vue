@@ -266,9 +266,9 @@
   import { listRoom } from "@/api/roomApi.js";
   export default {
     computed: {
-      indexMethod() {
-        return this.page.currentPag * this.page.pageSize - this.page.pageSize + 1;
-      }
+      // indexMethod() {
+      //   return (this.page.currentPag - 1) * this.page.pageSize + 1;
+      // }
     },
     mounted() {
       //获取表格数据
@@ -277,15 +277,15 @@
     data() {
       return {
         queryParams: {
-          customerName: "",
-          startDate: "",
-          endDate: "",
-          pageSize: "1", //默认第一页
-          isDeleted: "0" //显示标志  0-生效床位信息 1-失效床位信息(历史记录)
+          current: 1,           // 页码
+          pageSize: 6,          // 每页显示条数
+          customerName: "",     // 客户姓名
+          startDate: "",        // 开始日期
+          endDate: "",          // 结束日期
+          isDeleted: "0"        // 显示标志：0-生效，1-历史
         },
-        dateChange: [], //日期区间
-        bedDetailsList: [], //信息列表
-        //分页属性封装
+        dateChange: [],         // 日期区间
+        bedDetailsList: [],     // 表格数据
         page: {
           total: 0,
           pageSize: 6,
@@ -336,6 +336,9 @@
       };
     },
     methods: {
+      indexMethod(index) {
+        return (this.page.currentPag - 1) * this.page.pageSize + index + 1;
+      },
       // //初始化查询条件
       // rest() {
       //   this.queryParams.startDate = "";
@@ -355,29 +358,28 @@
           this.queryParams.startDate = "";
           this.queryParams.endDate = "";
         }
-        this.queryParams.pageSize = "1"; //回到第一页
+        this.queryParams.current = 1; // 重置为第一页
         //重载表格
         this.getBedDetailsList();
       },
       //选中页码
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.queryParams.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
-        this.getBedDetailsList();
+        this.queryParams.current = curPage; // 更新页码
+        this.getBedDetailsList();    // 重新加载数据
       },
       //正在使用
       doing() {
         this.btnFlag = true;
         this.queryParams.isDeleted = "0"; //0-生效床位信息
-        this.queryParams.pageSize = "1"; //回到第一页
+        this.queryParams.current  = "1"; //回到第一页
         this.getBedDetailsList();
       },
       // 使用历史
       history() {
         this.btnFlag = false;
         this.queryParams.isDeleted = "1"; //1-失效床位信息(历史记录)
-        this.queryParams.pageSize = "1"; //回到第一页
+        this.queryParams.current  = "1"; //回到第一页
         this.getBedDetailsList();
       },
       //点击编辑
@@ -538,10 +540,12 @@
       getBedDetailsList() {
         findBedDetailsList(this.queryParams).then(res => {
           this.bedDetailsList = res.data.records;
-          this.page.total = res.data.total; //总记录数
-          this.page.pageSize = res.data.size; //每页显示条数
-          this.page.currentPag = res.data.current; //当前页码
-          this.page.pagCount = res.data.pages; //总页数
+          this.page.total = res.data.total;
+          this.page.pageSize = res.data.size;
+          this.page.currentPag = res.data.current;
+          this.page.pagCount = res.data.pages;
+          // 同步更新 queryParams.current
+          this.queryParams.current = res.data.current;
         });
       }
     }

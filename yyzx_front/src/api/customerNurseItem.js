@@ -3,7 +3,7 @@ import http from '@/request/request.js';
 
 //为顾客单个/批量添加护理项目
 function addItemToCustomer(data){
-    return http.post('/customernurseitem/addItemToCustomer',data)
+    return http.post('/customernurseitem/addItemToCustomer',data,{ useJson: true })
 }
 //移除客户护理级别级联移除用户当前级别的护理项目
 function removeCustomerLevelAndItem(data){
