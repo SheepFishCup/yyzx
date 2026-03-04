@@ -24,7 +24,7 @@ public class DateConverter implements Converter<String, Date> {
         format.add("yyyy-MM-dd HH:mm");
         format.add("yyyy-MM-dd HH:mm:ss");
     }
-
+    // 转换方法
     @Override
     public Date convert(String source) {
         // trim(): 去掉字符串首尾空格
@@ -50,7 +50,7 @@ public class DateConverter implements Converter<String, Date> {
         }
 
     }
-
+    // 日期转换
     public Date parseDate(String dateStr, String format) {
         Date date = null;
         try {

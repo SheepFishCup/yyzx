@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
 /*
@@ -55,7 +56,7 @@ public class NurseContentController {
 
     @GetMapping("/delNurseItem")
     @ApiOperation("删除护理项目")
-    public ResultVo delNurseItem(Integer id) throws Exception {
+    public ResultVo delNurseItem(@RequestParam @NotEmpty(message = "id不能为空") Integer id) throws Exception {
         log.info("删除护理项目，参数为：{}",id);
         return nurseContentService.delNurseItem(id);
     }

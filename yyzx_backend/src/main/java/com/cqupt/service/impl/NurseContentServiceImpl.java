@@ -10,6 +10,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cqupt.dto.NurseItemDTO;
+import com.cqupt.exception.BusinessException;
+import com.cqupt.exception.DeletionNotAllowedException;
+import com.cqupt.mapper.CustomerNurseItemMapper;
 import com.cqupt.mapper.NurseContentMapper;
 import com.cqupt.mapper.NurseLevelItemMapper;
 import com.cqupt.pojo.NurseContent;
@@ -29,6 +32,8 @@ public class NurseContentServiceImpl extends ServiceImpl<NurseContentMapper, Nur
     private NurseLevelItemMapper nurseLevelItemMapper;
     @Autowired
     private NurseContentMapper nurseContentMapper;
+    @Autowired
+    private CustomerNurseItemMapper customerNurseItemMapper;
 
     @Override
     public ResultVo<List<NurseContent>> listNurseItemByLevel(Integer levelId) throws Exception {
@@ -80,22 +85,25 @@ public class NurseContentServiceImpl extends ServiceImpl<NurseContentMapper, Nur
         NurseContent nurseContent = new NurseContent();
         nurseContent.setIsDeleted(1);
         nurseContent.setId(id);
+        QueryWrapper qw=new QueryWrapper();
+        qw.eq("item_id",id);
+        boolean updateSuccess = updateById(nurseContent);
+        int customerCount = customerNurseItemMapper.selectCount(qw);
+        if (customerCount > 0){
+            throw new DeletionNotAllowedException("当前护理项目正在使用中，请先删除该护理项目在客户护理项目列表中的记录");
+        }
         //查询当前的护理项目是否在护理级别中，如果在列表中，则删除
-        QueryWrapper qwCount=new QueryWrapper();
-        qwCount.eq("item_id",id);
-        int count = nurseLevelItemMapper.selectCount(qwCount);
+        int count = nurseLevelItemMapper.selectCount(qw);
         if (count > 0){
-            QueryWrapper qw=new QueryWrapper();
-            qw.eq("item_id",id);
             int row = nurseLevelItemMapper.delete(qw);
-            //
             boolean temp = updateById(nurseContent);
             if (!(temp && row>0)){
-                throw new Exception("删除护理项目失败");
+                throw new DeletionNotAllowedException("删除护理项目失败");
             }
             return ResultVo.ok("删除护理项目成功");
+        }else if (!updateSuccess){
+            throw new BusinessException("删除护理项目失败");
         }
-        updateById(nurseContent);
         return ResultVo.ok("删除护理项目成功");
     }
 

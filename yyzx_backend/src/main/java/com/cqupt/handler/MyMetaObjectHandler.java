@@ -7,6 +7,7 @@ package com.cqupt.handler;
  */
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.cqupt.context.BaseContext;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +19,27 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     public void insertFill(MetaObject metaObject) {
         this.setFieldValByName("createTime", new Date(), metaObject);
         this.setFieldValByName("updateTime", new Date(), metaObject);
+
+        Long userId = getCurrentUserId();
+        if (userId != null) {
+            this.setFieldValByName("createBy", userId, metaObject);
+            this.setFieldValByName("updateBy", userId, metaObject);
+        }
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
         this.setFieldValByName("updateTime", new Date(), metaObject);
+        Long userId = getCurrentUserId();
+        if (userId != null) {
+            this.setFieldValByName("updateBy", userId, metaObject);
+        }
+    }
+    private Long getCurrentUserId() {
+        try {
+            return BaseContext.getCurrentId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

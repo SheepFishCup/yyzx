@@ -30,9 +30,11 @@ import com.cqupt.utils.JwtUtil;
 import com.cqupt.utils.ResultVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import java.nio.file.AccessDeniedException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +53,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private JwtProperties jwtProperties;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @Override
     public ResultVo<User> login(String username, String password) throws Exception {
         QueryWrapper<User> qw = new QueryWrapper<>();
@@ -60,8 +64,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        password = DigestUtils.md5DigestAsHex(password.getBytes());
-        if (!password.equals(user.getPassword())){
+//        password = DigestUtils.md5DigestAsHex(password.getBytes());
+        if (!passwordEncoder.matches(password, user.getPassword())){
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
         if (user.getIsDeleted()== StatusConstant.DISABLE){
@@ -104,9 +108,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo<Page<User>> findUserPage(UserDTO userDTO) throws Exception {
-        Page<User> MyPage = new Page<>(userDTO.getPageSize(),3);
+        // 检查当前用户是否有权限查看
+        Long currentId = BaseContext.getCurrentId();
+        User currentUser = userMapper.selectById(currentId);
+        if (currentUser.getRoleId() != 1) { // 假设 1 是管理员
+            throw new AccessDeniedException("无权访问");
+        }
+        Page<User> MyPage = new Page<>(userDTO.getPageSize(),6);
         QueryWrapper<User> qw = new QueryWrapper<>();
-        if (userDTO.getNickName()!=null && userDTO.getNickName()!=""){
+        if (userDTO.getNickName()!=null && !"".equals(userDTO.getNickName())){
             qw.like("nickname",userDTO.getNickName());
         }
         qw.eq("role_id",userDTO.getRoleId());
@@ -117,6 +127,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo<Page<User>> findAllUserPage(UserDTO userDTO) throws Exception {
+        // 检查当前用户是否有权限查看
+        Long currentId = BaseContext.getCurrentId();
+        User currentUser = userMapper.selectById(currentId);
+        if (currentUser.getRoleId() != 1) { // 假设 1 是管理员
+            throw new AccessDeniedException("无权访问");
+        }
         Page<User> myPage = new Page<>(userDTO.getPageSize(),6);
         QueryWrapper<User> qw = new QueryWrapper<>();
         page(myPage,qw);
@@ -148,7 +164,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 设置默认密码
 //            user.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
             // 对密码进行MD5加密
-            user.setPassword(DigestUtils.md5DigestAsHex(user.getPassword().getBytes()));
+//            user.setPassword(DigestUtils.md5DigestAsHex(user.getPassword().getBytes()));
+            // 对密码进行加密
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
 
             int row = userMapper.insert(user);
             if (row <= 0) {
@@ -165,6 +183,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public ResultVo updateUser(User user) throws Exception {
         UpdateWrapper<User> uw = new UpdateWrapper<>();
         uw.eq("id",user.getId());
+        // 对密码进行加密
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            String encodedPassword = passwordEncoder.encode(user.getPassword());
+            uw.set("password", encodedPassword);
+        }
+        user.setPassword(null);
         int row = userMapper.update(user, uw);
         if (row>0){
             return ResultVo.ok("修改成功");

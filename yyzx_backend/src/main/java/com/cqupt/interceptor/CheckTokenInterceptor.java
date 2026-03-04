@@ -61,8 +61,14 @@ public class CheckTokenInterceptor implements HandlerInterceptor {
             //3、通过，放行
             return true;
         } catch (ExpiredJwtException e) {
+            response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"msg\":\"token 已过期\"}");
             throw new BusinessException("token已过期");
         } catch (Exception e){
+            response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"msg\":\"token 不合法\"}");
             throw new BusinessException("token不合法");
         }
     }

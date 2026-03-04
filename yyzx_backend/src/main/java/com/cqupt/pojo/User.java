@@ -36,6 +36,7 @@ public class User implements Serializable {
     private Date createTime;
 
     @ApiModelProperty(value = "创建者")
+    @TableField(fill = FieldFill.INSERT)
     private Long createBy;
 
     @ApiModelProperty(value = "更新时间")
@@ -43,6 +44,7 @@ public class User implements Serializable {
     private Date updateTime;
 
     @ApiModelProperty(value = "更新者")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updateBy;
 
     @ApiModelProperty(value = "逻辑删除标记(0:显示，1:隐藏)")

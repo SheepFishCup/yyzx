@@ -30,7 +30,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     @ApiOperation("用户登录接口")
     @ApiImplicitParams({
             @ApiImplicitParam(dataType = "String", name = "username", value = "用户登录账号", required = true),
