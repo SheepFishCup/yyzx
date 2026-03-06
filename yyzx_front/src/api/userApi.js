@@ -2,7 +2,7 @@
 import http from '@/request/request.js';
 //用户登录
 function login(data){
-    return http.get('/user/login',{params:data})
+    return http.post('/user/login',data)
 }
 //查询系统用户信息
 function getUserList(data){

@@ -15,7 +15,10 @@ const pendingRequests = new Map();
 // 生成请求唯一标识
 function generateRequestKey(config) {
     const { method, url, params, data } = config;
-    return [method, url, qs.stringify(params), qs.stringify(data)].join('&');
+    let paramsStr = params instanceof FormData ? 'FormData' : qs.stringify(params);
+    let dataStr = data instanceof FormData ? 'FormData' : qs.stringify(data);
+    
+    return [method, url, paramsStr, dataStr].join('&');
 }
 
 // 添加请求到 pendingRequests
@@ -67,24 +70,19 @@ instance.interceptors.request.use(
         } else if (token) {
             config.headers['token'] = token; // 携带有效 Token
         }
-
-        // 定义需要 application/json 格式的 POST 接口
-        const jsonQueryParamsPath = [
-            // '/customernurseitem/addItemToCustomer',
-            // '/backdown/addBackdown'
-        ];
-
-        // 设置 POST 请求参数格式
-        if (config.method === 'post' && !jsonQueryParamsPath.includes(config.url) && !config.useJson) {
+        // 处理 multipart/form-data 格式
+        if (config.data instanceof FormData) {
+            // 删除手动设置的 Content-Type，让浏览器自动处理
+            delete config.headers['Content-Type'];
+            config.transformRequest = [data => data];
+        }else if (config.useJson) {
+            // 只有非 FormData 且 useJson=true 时才设置为 JSON
+            config.headers['Content-Type'] = 'application/json';
+        }else if (config.method === 'post' && !config.useJson){
+            // 默认处理 application/x-www-form-urlencoded
             config.data = qs.stringify(config.data);
         }
-        // else if (config.method === 'delete' && config.params) {
-        //     // 如果 DELETE 请求使用 params 传递参数，确保格式正确
-        //     config.paramsSerializer = function (params) {
-        //         return qs.stringify(params);
-        //     };
-        // }
-
+        
         return config;
     },
     function (error) {

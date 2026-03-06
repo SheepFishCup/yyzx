@@ -1,21 +1,25 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header>
-        <div>
-          <el-row :gutter="30">
-            
-            <el-col :span="17">
-              <el-button type="primary" @click="addItem" color="#337ab7" style="margin-top:4px">
-                <el-icon>
-                  <Plus />
-                </el-icon>
-                <span>添加</span>
-              </el-button>
-            </el-col>
-          </el-row>
-        </div>
-      </el-header>
+	<el-header>
+	  <div>
+	    <el-row :gutter="30">
+	      <el-col :span="17">
+	        <!-- 添加膳食按钮 -->
+	        <el-button type="primary" @click="addItem" color="#337ab7" style="margin-top:4px">
+	          <el-icon><Plus /></el-icon>
+	          <span>添加膳食</span>
+	        </el-button>
+        
+	        <!-- 添加食品按钮（新增） -->
+	        <el-button type="success" @click="addFood" color="#67c23a" style="margin-top:4px;margin-left:10px">
+	          <el-icon><Plus /></el-icon>
+	          <span>添加食品</span>
+	        </el-button>
+	      </el-col>
+	    </el-row>
+	  </div>
+	</el-header>
       <el-divider style="margin:0"></el-divider>
       <el-main>
           <el-tabs type="border-card" @tab-click="handleTabClick" v-model="queryParams.weekDay">
@@ -194,6 +198,77 @@
         </span>
       </template>
     </el-dialog>
+	<!-- 食品添加/编辑对话框 -->
+	<el-dialog
+	  v-model="foodDialog.dialogVisible"
+	  :title="foodDialog.tops"
+	  width="50%"
+	  align-center
+	  draggable
+	  :before-close="handleFoodClose"
+	>
+	  <el-divider border-style="double" style="margin:0;" />
+	  <el-form
+	    label-position="right"
+	    label-width="100px"
+	    style="max-width:500px;margin:20px auto"
+	    ref="foodForm"
+	    :model="foodDialog.item"
+	    :rules="foodRules"
+	  >
+	    <el-form-item label="食品名称：" prop="foodName">
+	      <el-input v-model="foodDialog.item.foodName" placeholder="请输入食品名称" />
+	    </el-form-item>
+    
+	    <el-form-item label="食品类型：" prop="foodType">
+	      <el-select v-model="foodDialog.item.foodType" placeholder="请选择食品类型" style="width:100%">
+	        <el-option label="主食" value="主食" />
+	        <el-option label="大荤" value="大荤" />
+	        <el-option label="小荤" value="小荤" />
+	        <el-option label="素菜" value="素菜" />
+	        <el-option label="汤" value="汤" />
+	      </el-select>
+	    </el-form-item>
+    
+	    <el-form-item label="食品价格：" prop="price">
+	      <el-input-number v-model="foodDialog.item.price" :min="0" :precision="2" :step="0.5" />
+	      <span style="margin-left:10px">元</span>
+	    </el-form-item>
+    
+	    <el-form-item label="是否清真：" prop="isHalal">
+	      <el-radio-group v-model="foodDialog.item.isHalal">
+	        <el-radio :label="1">是</el-radio>
+	        <el-radio :label="0">否</el-radio>
+	      </el-radio-group>
+	    </el-form-item>
+    
+	    <el-form-item label="食品图片：" prop="foodImg">
+	      <el-upload
+		  class="food-uploader"
+	  	  action="#"
+		  :auto-upload="false"
+		  :show-file-list="false"
+		  :on-change="handleFileChange"
+		  :before-upload="beforeFoodUpload"
+		  :accept="'.png,.jpg,.jpeg,.gif'"
+	      >
+	        <img v-if="foodDialog.item.foodImg" :src="foodDialog.item.foodImg" class="food-preview" />
+	        <el-icon v-else class="uploader-icon"><Plus /></el-icon>
+	        <div class="el-upload__text">
+	          点击上传或拖拽文件到此区域<br/>
+	          <span class="upload-tip">仅支持 PNG/JPG/JPEG 格式，大小不超过 2MB,建议200×200或300×300像素</span>
+	        </div>
+	      </el-upload>
+	    </el-form-item>
+	  </el-form>
+	  <el-divider border-style="double" style="margin:0;" />
+	  <template #footer>
+	    <span class="dialog-footer">
+	      <el-button type="primary" @click="saveFood('foodForm')">保存</el-button>
+	      <el-button @click="cancelFood">取消</el-button>
+	    </span>
+	  </template>
+	</el-dialog>
   </div>
 </template>
 
@@ -205,7 +280,7 @@ import {
  delMeal,
  findMeal
 } from "@/api/mealApi.js";
-import { findFood } from "@/api/foodApi.js";
+import { findFood,uploadFoodImg,addFood } from "@/api/foodApi.js";
 export default {
   
   data() {
@@ -243,7 +318,32 @@ export default {
 	  foodList:[],
 	  mealList:[],
 	  path:'',
-	  hasFood:true
+	  hasFood: true,
+	  // 食品对话框数据
+		foodDialog: {
+			dialogVisible: false,
+			tops: '',
+			item: {
+				id: '',
+				foodName: '',
+				foodType: '',
+				price: 0,
+				isHalal: 0,
+				foodImg: ''
+			}
+		},
+
+		// 食品表单验证规则
+		// 1. 修改验证规则，移除 foodImg 的 required 校验，改为在 saveFood 中逻辑判断
+			foodRules: {
+				foodName: [{ required: true, message: '请输入食品名称', trigger: 'blur' }],
+				foodType: [{ required: true, message: '请选择食品类型', trigger: 'change' }],
+				price: [{ required: true, message: '请输入食品价格', trigger: 'blur' }]
+				// foodImg 移除必填，避免上传前校验阻断
+			},
+
+		// 临时存储上传的文件
+		uploadFile: null
     };
   },
   mounted() {
@@ -263,7 +363,7 @@ export default {
   },
   methods: {
 	foodFullImg(foodImg){
-			  return 'http://localhost:9999/yyzx/images/'+foodImg;
+		return process.env.VUE_APP_IMG_URL + '/' + foodImg;
 	},
     //点击查询
     query() {
@@ -388,7 +488,143 @@ export default {
 	changeType(typeId){
 	  // console.log(typeId);
 	  this.queryParams.mealType = typeId;
-	}
+	},
+	 // 点击添加食品按钮
+	 addFood() {
+      this.foodDialog.tops = '添加食品';
+      this.foodDialog.dialogVisible = true;
+      this.foodDialog.item = {
+        id: '',
+        foodName: '',
+        foodType: '',
+        price: 0,
+        isHalal: 0,
+        foodImg: ''
+      };
+      this.uploadFile = null;
+    },
+    
+    // 关闭食品对话框
+    handleFoodClose() {
+      this.foodDialog.dialogVisible = false;
+      this.resetForm('foodForm');
+    },
+    
+    // 取消食品添加
+    cancelFood() {
+      this.handleFoodClose();
+    },
+    
+    // 图片上传前的验证
+    beforeFoodUpload(file) {
+      // 验证文件类型
+      const validType = ['image/png', 'image/jpeg', 'image/jpg','image/gif'].includes(file.type);
+      if (!validType) {
+        this.$message.error('仅支持 PNG/JPG/JPEG 格式图片！');
+        return false;
+      }
+      
+      // 验证文件大小（2MB）
+      const validSize = file.size / 1024 / 1024 < 2;
+      if (!validSize) {
+        this.$message.error('图片大小不能超过 2MB！');
+        return false;
+      }
+      
+      return true;
+    },
+    
+    // 文件变化处理
+    handleFileChange(file) {
+      this.uploadFile = file.raw;
+      // 生成预览图
+      const reader = new FileReader();
+      reader.readAsDataURL(file.raw);
+      reader.onload = (e) => {
+        this.foodDialog.item.foodImg = e.target.result;
+      };
+    },
+    
+    // 自定义图片上传
+    uploadFoodImage(options) {
+		return new Promise((resolve, reject) => {
+				const formData = new FormData();
+				formData.append('file', options.file);
+				console.log('上传文件:', options.file);
+        		console.log('FormData 内容:', formData.get('file'));
+
+				uploadFoodImg(formData).then(res => {
+					if (res.flag || res.code === 200) {
+						this.foodDialog.item.foodImg = res.data;
+						this.$message.success('图片上传成功');
+						resolve(res);
+					} else {
+						this.$message.error(res.message || res.msg);
+						reject(res);
+					}
+				}).catch(err => {
+					console.error('上传错误:', err);
+					this.$message.error('图片上传失败');
+					reject(err);
+				});
+			});
+    },
+    
+    // 保存食品
+    saveFood(formName) {
+		this.$refs[formName].validate(valid => {
+    if (valid) {
+      // 如果有新选中的文件，先上传
+      if (this.uploadFile) {
+        const formData = new FormData();
+        formData.append('file', this.uploadFile);
+
+        uploadFoodImg(formData).then(uploadRes => {
+          if (uploadRes.flag || uploadRes.code === 200) {
+            const fileName = uploadRes.data || uploadRes.message;
+            if (!fileName) {
+              this.$message.error('未获取到图片文件名');
+              return;
+            }
+            this.foodDialog.item.foodImg = fileName;
+            this.submitFoodForm();
+          } else {
+            this.$message.error(uploadRes.message || '图片上传失败');
+          }
+        }).catch(() => {
+          this.$message.error('图片上传失败');
+        });
+      } else {
+        // 如果是编辑且未更换图片，直接提交（保留原图片路径）
+        // 如果是新增且没图片，这里可以根据业务需求拦截
+        if (!this.foodDialog.item.id && !this.foodDialog.item.foodImg) {
+           this.$message.error('请上传食品图片');
+           return;
+        }
+        this.submitFoodForm();
+      }
+    }
+  });
+    },
+    
+    // 提交食品表单
+    submitFoodForm() {
+		// 确保 foodImg 有值
+		if (!this.foodDialog.item.foodImg) {
+			this.$message.error('图片尚未上传成功，请等待上传完成后再保存');
+			return;
+		}
+      const api = this.foodDialog.item.id ? updateFood : addFood;
+      api(this.foodDialog.item).then(res => {
+        if (res.flag) {
+          this.$message.success(res.message);
+          this.handleFoodClose();
+          this.getFoodList(); // 刷新食品列表
+        } else {
+          this.$message.error(res.message);
+        }
+      });
+    }
   }
   
 };
@@ -396,6 +632,50 @@ export default {
 </script>
 
 <style scoped >
+/* 图片上传样式 */
+.food-uploader {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 300px;
+  height: 200px;
+}
+
+.food-uploader:hover {
+  border-color: #409EFF;
+}
+
+.food-preview {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 200px;
+  height: 200px;
+  line-height: 200px;
+  text-align: center;
+}
+
+.el-upload__text {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  padding: 10px;
+}
+
+.upload-tip {
+  color: #909399;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .activeBtn {
   color: #1890ff;
   background: rgb(232, 244, 255);

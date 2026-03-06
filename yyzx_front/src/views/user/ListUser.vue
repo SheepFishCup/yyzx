@@ -40,7 +40,6 @@
                 label="序号"
                 width="60"
               />
-              <el-table-column align="center" prop="id" label="编号" width="120" />
                <el-table-column align="center" prop="createTime" label="创建时间" width="120" />
               <el-table-column align="center" prop="username" label="用户名" width="120" />
               <el-table-column align="center" prop="nickname" label="真实姓名" width="120" />
