@@ -85,7 +85,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
         customer.setId(id);
         customer.setIsDeleted(1);
         int row1=customerMapper.updateById(customer);
-        //修改床位状态为空闲 -1
+        //修改床位状态为空闲-1
         Bed bed = new Bed();
         bed.setId(bedId);
         bed.setBedStatus(1);

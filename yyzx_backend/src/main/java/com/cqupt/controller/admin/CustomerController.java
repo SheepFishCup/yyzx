@@ -44,7 +44,7 @@ public class CustomerController {
 
     @GetMapping("/removeCustomer")
     @ApiOperation("删除客户")
-    public ResultVo removeCustomer(Long id,Integer bedId) throws Exception {
+    public ResultVo removeCustomer( Long id,Integer bedId) throws Exception {
         log.info("删除客户,参数为：{}", id);
         return customerService.removeCustomer(id,bedId);
     }

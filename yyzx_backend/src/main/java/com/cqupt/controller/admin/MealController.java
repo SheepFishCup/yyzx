@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotEmpty;
+
 @Slf4j
 @RestController
 //@RequestMapping("/admin/meal")
@@ -52,7 +54,7 @@ public class MealController {
 
     @GetMapping("/removeMeal")
     @ApiOperation("删除膳食")
-    public ResultVo removeMeal(Integer id) throws Exception {
+    public ResultVo removeMeal(@RequestParam @NotEmpty(message = "id不能为空") Integer id) throws Exception {
         log.info("删除膳食，参数为：{}",id);
         mealService.removeById(id);
         return ResultVo.ok("删除成功");
