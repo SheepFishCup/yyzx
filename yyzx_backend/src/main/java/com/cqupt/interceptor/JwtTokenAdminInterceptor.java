@@ -7,6 +7,7 @@ package com.cqupt.interceptor;
  */
 
 import com.cqupt.constant.JwtClaimsConstant;
+import com.cqupt.constant.RedisConstant;
 import com.cqupt.context.BaseContext;
 import com.cqupt.exception.BusinessException;
 import com.cqupt.properties.JwtProperties;
@@ -14,6 +15,7 @@ import com.cqupt.utils.JwtUtil;
 import io.jsonwebtoken.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -23,9 +25,11 @@ import javax.servlet.http.HttpServletResponse;
 
 @Component
 @Slf4j
-public class CheckTokenInterceptor implements HandlerInterceptor {
+public class JwtTokenAdminInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtProperties jwtProperties;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -56,6 +60,27 @@ public class CheckTokenInterceptor implements HandlerInterceptor {
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecret(), token);//解析令牌
             Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());//获取员工id
+            // 3、从 Redis 验证 token 是否存在（支持强制下线）
+            String tokenKey = RedisConstant.USER_TOKEN_PREFIX + empId;
+            String cachedToken = (String) redisTemplate.opsForValue().get(tokenKey);
+
+            if (cachedToken == null) {
+                response.setStatus(401);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"msg\":\"登录已过期，请重新登录\"}");
+                throw new BusinessException("登录已过期，请重新登录");
+            }
+
+            if (!cachedToken.equals(token)) {
+                response.setStatus(401);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"msg\":\"token 不匹配，可能已在其他地方登录\"}");
+                throw new BusinessException("token 不匹配");
+            }
+
+            // 4、刷新 token 过期时间（续期）
+            redisTemplate.expire(tokenKey, RedisConstant.TOKEN_EXPIRE_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+
             BaseContext.setCurrentId(empId);  // 保存当前登录的员工id到threadLocal中
             log.info("当前员工id：{}", empId);
             //3、通过，放行
@@ -71,5 +96,10 @@ public class CheckTokenInterceptor implements HandlerInterceptor {
             response.getWriter().write("{\"code\":401,\"msg\":\"token 不合法\"}");
             throw new BusinessException("token不合法");
         }
+    }
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        log.info("清除线程: {}中的threadLocal变量", Thread.currentThread().getId());
+        BaseContext.removeCurrentId(); // 清除避免内存溢出
     }
 }

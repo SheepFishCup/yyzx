@@ -26,6 +26,7 @@ spring:
         max-idle: 8 # 最大空闲连接数
         min-idle: 5 # 最小空闲连接数
         max-wait: 3000ms
+
   mvc: # 解决spring2.7以上版本匹配路径问题
     pathmatch:
       matching-strategy: ant_path_matcher
@@ -52,3 +53,14 @@ yyzx:
     patient-secret: cqupt123456
     patient-expire: 7200000
     patient-header: token
+
+  wechat:
+    appid: ${yyzx.wechat.appid}
+    secret: ${yyzx.wechat.secret}
+    mchid: ${yyzx.wechat.mchid}
+    mch-serial-no: ${yyzx.wechat.mch-serial-no}
+    private-key-file-path: ${yyzx.wechat.private-key-file-path}
+    api-v3-key: ${yyzx.wechat.api-v3-key}
+    we-chat-pay-cert-file-path: ${yyzx.wechat.private-key-file-path}
+    notify-url: ${yyzx.wechat.notify-url}
+    refund-notify-url: ${yyzx.wechat.refund-notify-url}

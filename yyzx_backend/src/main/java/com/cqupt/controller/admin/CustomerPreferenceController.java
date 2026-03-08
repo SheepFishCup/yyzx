@@ -6,10 +6,12 @@ package com.cqupt.controller.admin;
  * @description
  */
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cqupt.dto.CustomerPreferenceDTO;
 import com.cqupt.pojo.CustomerPreference;
 import com.cqupt.service.CustomerPreferenceService;
 import com.cqupt.utils.ResultVo;
+import com.cqupt.vo.CustomerPreferenceVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +55,7 @@ public class CustomerPreferenceController {
 
     @GetMapping("/listCustomerpreference")
     @ApiOperation("查询顾客喜好")
-    public ResultVo listCustomerpreference(CustomerPreferenceDTO customerPreferenceDTO) throws Exception {
+    public ResultVo<Page<CustomerPreferenceVo>> listCustomerpreference(CustomerPreferenceDTO customerPreferenceDTO) throws Exception {
         log.info("查询顾客喜好,参数为：{}", customerPreferenceDTO);
         return customerPreferenceService.listCustomerPreferenceVoPage(customerPreferenceDTO);
     }

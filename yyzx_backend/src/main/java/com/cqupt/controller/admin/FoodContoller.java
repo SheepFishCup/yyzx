@@ -20,6 +20,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,6 +48,7 @@ public class FoodContoller {
 //    }
     @GetMapping("/listFood")
     @ApiOperation("食物列表查询")
+    @Cacheable(value = "foodList", key = "'list'", unless = "#result == null")
     public List<Food> listFood() {
         return foodService.list();
     }
@@ -99,6 +102,7 @@ public class FoodContoller {
 
     @PostMapping("/addFood")
     @ApiOperation("添加食物")
+    @CacheEvict(value = "foodList", allEntries = true)
     public ResultVo<String> addFood(@RequestBody Food food){
         return foodService.save(food)?ResultVo.ok("添加成功"):ResultVo.fail("添加失败");
     }

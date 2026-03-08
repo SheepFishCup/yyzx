@@ -6,10 +6,12 @@ package com.cqupt.controller.admin;
  * @description
  */
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cqupt.dto.CustomerNurseItemDTO;
 import com.cqupt.pojo.CustomerNurseItem;
 import com.cqupt.service.CustomerNurseItemService;
 import com.cqupt.utils.ResultVo;
+import com.cqupt.vo.CustomerNurseItemVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -33,7 +35,7 @@ public class CustomerNurseItemController {
 
     @GetMapping("/listCustomerItem")
     @ApiOperation("查询顾客护理项目列表-分页")
-    public ResultVo listCustomerItem(CustomerNurseItemDTO customerNurseItemDTO) throws Exception {
+    public ResultVo<Page<CustomerNurseItemVo>> listCustomerItem(CustomerNurseItemDTO customerNurseItemDTO) throws Exception {
         log.info("查询顾客护理项目列表-分页,参数为：{}",customerNurseItemDTO);
         return customerNurseItemService.listCustomerItem(customerNurseItemDTO);
     }

@@ -10,14 +10,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cqupt.constant.JwtClaimsConstant;
-import com.cqupt.constant.MessageConstant;
-import com.cqupt.constant.PasswordConstant;
-import com.cqupt.constant.StatusConstant;
+import com.cqupt.constant.*;
 import com.cqupt.context.BaseContext;
 import com.cqupt.dto.UserDTO;
 import com.cqupt.exception.AccountLockedException;
 import com.cqupt.exception.AccountNotFoundException;
+import com.cqupt.exception.BusinessException;
 import com.cqupt.exception.PasswordErrorException;
 import com.cqupt.mapper.MenuMapper;
 import com.cqupt.mapper.RoleMenuMapper;
@@ -28,17 +26,23 @@ import com.cqupt.properties.JwtProperties;
 import com.cqupt.service.UserService;
 import com.cqupt.utils.JwtUtil;
 import com.cqupt.utils.ResultVo;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.AccessDeniedException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -52,8 +56,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private JwtProperties jwtProperties;
+    @Autowired
+    private RedissonClient redissonClient;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Override
     public ResultVo<User> login(String username, String password) throws Exception {
@@ -98,6 +107,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                         jwtProperties.getUserSecret(),
                         jwtProperties.getUserExpire(),
                         claims);
+
+                // 将 token 和用户信息存入 Redis
+                String tokenKey = RedisConstant.USER_TOKEN_PREFIX + user.getId();
+                redisTemplate.opsForValue().set(tokenKey, token, Duration.ofSeconds(RedisConstant.TOKEN_EXPIRE_SECONDS));
+
                 return ResultVo.ok(user, token);
             }
             return ResultVo.fail("无权限，请联系管理员");
@@ -141,44 +155,54 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo addUser(User user) throws Exception {
-        String lockKey = "lock:user:add:" + user.getUsername();//锁的key
+        // 创建锁对象
+        String lockKey = RedisConstant.USER_ADD_LOCK_PREFIX + user.getUsername();
+        RLock lock = redissonClient.getLock(lockKey);
+
+        // 尝试获取锁，使用看门狗模式（自动续期）
+        boolean isLocked = lock.tryLock(0, -1, TimeUnit.SECONDS);
+        if (!isLocked) {
+            log.warn("获取分布式锁失败，用户名：{}", user.getUsername());
+            return ResultVo.fail("系统繁忙，请稍后再试");
+        }
         try {
-            // 尝试获取分布式锁
-            //锁的过期时间设置为10秒
-            if (!redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", Duration.ofSeconds(10))) {
-                return ResultVo.fail("系统繁忙，请稍后再试");
-            }
-            // 校验用户名是否已存在
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("username", user.getUsername());
-            User existingUser = getOne(queryWrapper);
+            // 在锁保护下执行事务操作
+            return transactionTemplate.execute(status -> {
+                try {
+                    // 校验用户名是否已存在
+                    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("username", user.getUsername());
+                    User existingUser = getOne(queryWrapper);
+                    if (existingUser != null) {
+                        status.setRollbackOnly();
+                        throw new BusinessException("用户名已存在");
+                    }
+                    // 插入用户
+                    user.setIsDeleted(StatusConstant.ENABLE);
+                    user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-            if (existingUser != null) {
-                throw new RuntimeException("用户名已存在");
-            }
-//            BeanUtils.copyProperties(UserDTO, user);
-            // 插入用户
-            user.setIsDeleted(StatusConstant.ENABLE);
-            user.setUpdateBy(BaseContext.getCurrentId());
-            user.setCreateBy(BaseContext.getCurrentId());
-            // 设置默认密码
-//            user.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
-            // 对密码进行MD5加密
-//            user.setPassword(DigestUtils.md5DigestAsHex(user.getPassword().getBytes()));
-            // 对密码进行加密
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-            int row = userMapper.insert(user);
-            if (row <= 0) {
-                return ResultVo.fail("添加失败");
-            }
-            return ResultVo.ok("添加成功");
+                    int row = userMapper.insert(user);
+                    if (row <= 0) {
+                        status.setRollbackOnly();// 设置回滚
+                        throw new BusinessException("添加失败");
+                    }
+                    return ResultVo.ok("添加成功");
+                } catch (BusinessException e) {
+                    throw e;
+                } catch (Exception e) {
+                    status.setRollbackOnly();
+                    throw new BusinessException("添加失败：" + e.getMessage());
+                }
+            });
         } finally {
-            // 释放分布式锁
-            redisTemplate.delete(lockKey);
+            // 释放锁（只有当前线程持有锁时才释放）
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo updateUser(User user) throws Exception {
         UpdateWrapper<User> uw = new UpdateWrapper<>();
@@ -195,7 +219,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         return ResultVo.fail("修改失败");
     }
-
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo deleteUser(Long id) throws Exception {
         UpdateWrapper<User> uw = new UpdateWrapper<>();

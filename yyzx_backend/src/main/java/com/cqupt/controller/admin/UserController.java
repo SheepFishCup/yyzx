@@ -17,6 +17,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -50,11 +51,15 @@ public class UserController {
         log.info("查询所有用户分页：{}", userDTO);
         return userService.findAllUserPage(userDTO);
     }
+
+//    @CachePut(cacheNames = "userCache", key = "#user.id")
     @PostMapping("/addUser")
     public ResultVo addUser(User user) throws Exception {
         log.info("添加用户：{}", user);
         return userService.addUser(user);
     }
+
+
     @PostMapping("/updateUser")
     public ResultVo updateUser(User user) throws Exception {
         log.info("更新用户：{}", user);

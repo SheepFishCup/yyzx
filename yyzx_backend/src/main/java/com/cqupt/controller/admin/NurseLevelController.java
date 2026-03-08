@@ -11,6 +11,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +38,7 @@ public class NurseLevelController {
 
     @PostMapping("/addNurseLevel")
     @ApiOperation("添加护理级别")
+    @CacheEvict(cacheNames = "listNurseLevelCache",allEntries = true)
     public ResultVo addNurseLevel(NurseLevel nurseLevel) throws Exception {
         log.info("添加护理级别,参数为：{}", nurseLevel);
         nurseLevelService.save(nurseLevel);
@@ -44,6 +47,7 @@ public class NurseLevelController {
 
     @PostMapping("/updateNurseLevel")
     @ApiOperation("修改护理级别")
+    @CacheEvict(cacheNames = "listNurseLevelCache",allEntries = true)
     public ResultVo updateNurseLevel(NurseLevel nurseLevel) throws Exception {
         log.info("修改护理级别,参数为：{}", nurseLevel);
         nurseLevelService.updateById(nurseLevel);
@@ -52,6 +56,7 @@ public class NurseLevelController {
 
     @GetMapping("/removeNurseLevel")
     @ApiOperation("删除护理级别")
+    @CacheEvict(cacheNames = "listNurseLevelCache",allEntries = true)
     public ResultVo removeNurseLevel(Integer id) throws Exception {
         log.info("删除护理级别,参数为：{}", id);
         nurseLevelService.removeById(id);
@@ -59,6 +64,8 @@ public class NurseLevelController {
     }
     @GetMapping("/listNurseLevel")
     @ApiOperation("查询护理级别")
+    @Cacheable(cacheNames = "listNurseLevelCache",
+            key = "#root.args[0].levelStatus != null ? 'status:' + #root.args[0].levelStatus : 'all'")
     public ResultVo listNurseLevel(NurseLevel nurseLevel) throws Exception {
         log.info("查询护理级别,参数为：{}", nurseLevel);
         QueryWrapper qw=new QueryWrapper();

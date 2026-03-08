@@ -22,6 +22,9 @@ import com.cqupt.service.NurseRecordService;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.NurseRecordsVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,11 +75,12 @@ public class NurseRecordServiceImpl extends ServiceImpl<NurseRecordMapper, Nurse
 
     @Override
     public ResultVo<Page<NurseRecordsVo>> queryNurseRecordsVo(NurseRecordDTO nurseRecordDTO) throws Exception {
+
         Page<NurseRecordsVo> page = new Page<>(nurseRecordDTO.getPageSize(),6);
         nurseRecordMapper.selectNurseRecordsVo(page,nurseRecordDTO.getCustomerId());
         return ResultVo.ok(page);
     }
-
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo removeCustomerRecord(Long id) throws Exception {
 //        UpdateWrapper<NurseRecord> updateWrapper = new UpdateWrapper<>();

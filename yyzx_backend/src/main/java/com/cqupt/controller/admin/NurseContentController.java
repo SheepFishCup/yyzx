@@ -10,6 +10,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotEmpty;
@@ -31,13 +32,6 @@ import java.util.List;
 public class NurseContentController {
     @Autowired
     private NurseContentService nurseContentService;
-
-    @GetMapping("/listNurseItemByLevel")
-    @ApiOperation("查询护理项目列表-按护理等级查询")
-    public ResultVo<List<NurseContent>> listNurseItemByLevel(Integer levelId) throws Exception {
-        log.info("查询护理项目列表-按护理等级查询,参数为：{}",levelId);
-        return nurseContentService.listNurseItemByLevel(levelId);
-    }
 
     @PostMapping("/addNurseItem")
     @ApiOperation("添加护理项目")

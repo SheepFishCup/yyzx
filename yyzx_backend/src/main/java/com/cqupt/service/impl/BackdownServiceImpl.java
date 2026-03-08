@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cqupt.context.BaseContext;
 import com.cqupt.dto.BackdownDTO;
 import com.cqupt.mapper.BackdownMapper;
 import com.cqupt.pojo.Backdown;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -40,8 +42,8 @@ public class BackdownServiceImpl extends ServiceImpl<BackdownMapper, Backdown> i
         UpdateWrapper<Backdown> updateWrapper=new UpdateWrapper<>();
         updateWrapper.eq("id",backdown.getId());
         updateWrapper.set("auditstatus",backdown.getAuditStatus());
-        updateWrapper.set("audittime",backdown.getAuditTime());
-        updateWrapper.set("auditperson",backdown.getAuditPerson());
+        updateWrapper.set("audittime", LocalDateTime.now());
+        updateWrapper.set("auditperson", BaseContext.getCurrentId());
         backdownMapper.update(backdown,updateWrapper);
         return ResultVo.ok("审批成功");
     }
