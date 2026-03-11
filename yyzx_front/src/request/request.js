@@ -61,7 +61,12 @@ function isTokenExpired(token) {
 instance.interceptors.request.use(
     function (config) {
         addPending(config); // 添加请求到 pending 列表
-
+        // 验证码接口和登录接口不需要 token
+        const noAuthApis = ['/admin/generate', '/admin/loginWithCaptcha', '/admin/login'];
+        // 如果是不需要认证的接口，直接返回
+        if (noAuthApis.some(api => config.url.includes(api))) {
+            return config;
+        }
         // Token 校验与携带
         let token = sessionStorage.getItem("token");
         if (token && isTokenExpired(token)) {
@@ -80,6 +85,7 @@ instance.interceptors.request.use(
             config.headers['Content-Type'] = 'application/json';
         }else if (config.method === 'post' && !config.useJson){
             // 默认处理 application/x-www-form-urlencoded
+            // 如果是 POST 请求且没有使用 JSON，则使用 qs 序列化数据
             config.data = qs.stringify(config.data);
         }
         
