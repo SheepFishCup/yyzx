@@ -1,7 +1,6 @@
-package com.cqupt.controller.patient;
+package com.cqupt.controller.user;
 
 import com.cqupt.pojo.Patient;
-import com.cqupt.pojo.User;
 import com.cqupt.service.PatientService;
 import com.cqupt.utils.ResultVo;
 import io.swagger.annotations.Api;

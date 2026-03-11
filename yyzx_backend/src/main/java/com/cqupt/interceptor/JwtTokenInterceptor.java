@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 @Component
 @Slf4j
-public class JwtTokenAdminInterceptor implements HandlerInterceptor {
+public class JwtTokenInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtProperties jwtProperties;
     @Autowired

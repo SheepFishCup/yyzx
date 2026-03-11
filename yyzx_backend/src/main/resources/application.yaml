@@ -54,13 +54,13 @@ yyzx:
     patient-expire: 7200000
     patient-header: token
 
-  wechat:
-    appid: ${yyzx.wechat.appid}
-    secret: ${yyzx.wechat.secret}
-    mchid: ${yyzx.wechat.mchid}
-    mch-serial-no: ${yyzx.wechat.mch-serial-no}
-    private-key-file-path: ${yyzx.wechat.private-key-file-path}
-    api-v3-key: ${yyzx.wechat.api-v3-key}
-    we-chat-pay-cert-file-path: ${yyzx.wechat.private-key-file-path}
-    notify-url: ${yyzx.wechat.notify-url}
-    refund-notify-url: ${yyzx.wechat.refund-notify-url}
+#  wechat:
+#    appid: ${yyzx.wechat.appid}
+#    secret: ${yyzx.wechat.secret}
+#    mchid: ${yyzx.wechat.mchid}
+#    mch-serial-no: ${yyzx.wechat.mch-serial-no}
+#    private-key-file-path: ${yyzx.wechat.private-key-file-path}
+#    api-v3-key: ${yyzx.wechat.api-v3-key}
+#    we-chat-pay-cert-file-path: ${yyzx.wechat.private-key-file-path}
+#    notify-url: ${yyzx.wechat.notify-url}
+#    refund-notify-url: ${yyzx.wechat.refund-notify-url}

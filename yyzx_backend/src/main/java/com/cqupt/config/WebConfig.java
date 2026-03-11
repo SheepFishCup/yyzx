@@ -6,7 +6,7 @@ package com.cqupt.config;
  * @description web配置
  */
 
-import com.cqupt.interceptor.JwtTokenAdminInterceptor;
+import com.cqupt.interceptor.JwtTokenInterceptor;
 import com.cqupt.utils.DateConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -17,13 +17,14 @@ import org.springframework.web.servlet.config.annotation.*;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     @Autowired
-    private JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
+    private JwtTokenInterceptor jwtTokenAdminInterceptor;
     //登录拦截器
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtTokenAdminInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login",
+                .excludePathPatterns("/patient/login",
+                        "/admin/generate", "/admin/loginWithCaptcha", "/admin/login",
                         "/swagger-resources/**", "/doc.html", "/webjars/**",
                         "/v3/api-docs/**",
                         "/swagger-ui.html",

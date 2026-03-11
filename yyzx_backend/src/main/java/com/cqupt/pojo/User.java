@@ -71,6 +71,9 @@ public class User implements Serializable {
     @ApiModelProperty(value = "系统角色编号(1-管理员，2-健康管家 3-用户)")
     private Integer roleId;
 
+    @ApiModelProperty(value = "状态(0-禁用，1-正常)")
+    private Integer status;
+
     @ApiModelProperty(value = "当前角色的菜单")
     @TableField(exist = false)
     private List<Menu> menuList;
