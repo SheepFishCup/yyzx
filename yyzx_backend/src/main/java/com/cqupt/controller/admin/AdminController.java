@@ -9,9 +9,7 @@ package com.cqupt.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cqupt.constant.RedisConstant;
-import com.cqupt.dto.ImageCodeDTO;
-import com.cqupt.dto.LoginWithCodeDTO;
-import com.cqupt.dto.UserDTO;
+import com.cqupt.dto.*;
 import com.cqupt.pojo.User;
 import com.cqupt.service.UserService;
 import com.cqupt.utils.ImageCodeUtil;
@@ -123,5 +121,25 @@ public class AdminController {
         queryWrapper.eq("username", username);
         Long id = userService.getOne(queryWrapper).getId();
         return userService.changePassword(id, oldPassword, newPassword);
+    }
+
+    @ApiOperation("忘记密码 - 发送重置邮件")
+    @PostMapping("/forgotPassword")
+    public ResultVo forgotPassword(@Valid @RequestBody ForgotPasswordDTO forgotDTO) {
+        log.info("忘记密码请求，邮箱：{}", forgotDTO.getEmail());
+        return userService.forgotPassword(forgotDTO);
+    }
+
+    @ApiOperation("忘记密码 - 重置密码")
+    @PostMapping("/resetPassword")
+    public ResultVo resetPassword(@Valid @RequestBody ResetPasswordDTO resetDTO) {
+        log.info("重置密码请求");
+        return userService.resetPassword(resetDTO);
+    }
+
+    @ApiOperation("校验重置令牌")
+    @GetMapping("/verifyResetToken")
+    public ResultVo verifyResetToken(@RequestParam String token) {
+        return userService.verifyResetToken(token);
     }
 }

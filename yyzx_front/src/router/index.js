@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import store from "@/store"
 // 这里前后位置可以不一样
 import LoginView from '../views/Login.vue'
+import HomeLayout from '@/views/home/HomeLayout.vue'
+import Layout from '@/views/layout/Layout.vue'
+
 // 引入工具类
 const routes = [
     {
@@ -12,17 +15,47 @@ const routes = [
     {
     path: '/login',
     name: 'login',
-    component: LoginView
+    component: LoginView,
+    meta: { noAuth: true }  // ✅ 添加标记
+    },
+    {
+      path: '/reset-password',
+      name: 'ResetPassword',
+      component: () => import('@/views/ResetPassword.vue'),
+      meta: { 
+          title: '重置密码', 
+          noAuth: true  // 不需要登录即可访问
+      }
     },
     {
     path: "/",
     redirect: '/home'//默认跳转
     },
+    // 独立首页布局（不带左侧菜单）
     {
       path: "/home",
       name: "home",
       component: () => import('@/views/home/HomeLayout.vue')
     },
+    // 带左侧菜单的布局
+    {
+      path: '/main',
+      name: 'Layout',
+      component: Layout,
+      redirect: '/main/dashboard',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'Dashboard',
+          component: () => import('@/views/home/Home.vue'),
+          meta: { 
+            title: '首页',
+            icon: 'HomeFilled'
+          }
+        }
+        // ... 其他业务子路由
+      ]
+    }
 
 ]
 
@@ -73,60 +106,96 @@ function initRouter() {
   
   //路由守卫，路由跳转前执行检查逻辑
 router.beforeEach((to, from, next) => {
-    // console.log("to===========>",to); // /bed/bedMap
+  // console.log("to===========>",to); //
     //判断是否登录
     let token =sessionStorage.getItem('token');
-    if(to.path!='/login'){
-      if(token==null || token==''){
-        next('/login')
-      }
-    }
+    // ✅ 免登录白名单：包含 login、reset-password 和 404
+    const noAuthPaths = ['/login', '/reset-password',]
     
-    let currentPath = to.fullPath;
-    let menuArray=store.getters.menus;
-    // 检查是否已加载动态路由
-    let hasDynamicRoutes = router.getRoutes().some(route => route.name === 'layout');
-    console.log("hasDynamicRoutes:", hasDynamicRoutes, "menuArray:", menuArray, "routes count:", router.getRoutes().length);
-    
-    // 如果没有加载过动态路由，则先加载
-    if(!hasDynamicRoutes && menuArray!=null && menuArray.length>0 && menuArray!='undefined') {
-      //需要动态加载路由信息，此时有了路由的路径
-      initRouter();
-      next({path: to.path});
-      return;
+    // 检查路由是否有 noAuth 标记 或 在白名单中
+    if (to.meta.noAuth || noAuthPaths.includes(to.path)) {
+      console.log('免登录路径，直接放行')
+        next()  // ✅ 直接放行
+        return
     }
-    //第一次访问登录页面时，并没有菜单列表，此时也动态加载了路由并让length变成了3，导致登录后不会再执行初始化加载路由,加上其他额外条件
-    // 一开始只有3条初始路由 404,login,redirect
-    // console.log("router.getRoutes()===========>",router.getRoutes()); // 3 -> 21
-    // if(router.getRoutes().length === 3 && Array.isArray(menuArray) && menuArray.length > 0) {
-    //   //需要动态加载路由信息，此时有了路由的路径
-    //   initRouter();
-    //   next({path: to.path});
-    //   return;
-    // }
-    let menus = store.getters.menus;
-    let currentMenu = null;
+  // console.log("to===========>",to); // /bed/bedMap
+  //判断是否登录
   
-    let firstLevelSize = menus.length;
-    let secondLevelSize = 0;
-  
-    for (let i = 0; i < firstLevelSize && currentMenu == null; i++) {
-      secondLevelSize = menus[i].children.length;
-      for (let j = 0; j < secondLevelSize; j++) {
-        //说明找到了
-        if (menus[i].children[j].path == currentPath) {
-          currentMenu = menus[i].children[j];
-          break;
-        }
-      }
+  if (to.path != "/login") {
+    if (token == null || token == "") {
+      next("/login");
     }
-  
-    if (currentMenu) {
-      //调用vuex判断是否需要添加到state的tabs中
-      store.commit("addTab", currentMenu);
-    }
-    //放行
+  }
+
+  let currentPath = to.fullPath;
+  let menuArray = store.getters.menus;
+  // 检查是否已加载动态路由
+  let hasDynamicRoutes = router
+    .getRoutes()
+    .some((route) => route.name === "layout");
+  console.log(
+    "hasDynamicRoutes:",
+    hasDynamicRoutes,
+    "menuArray:",
+    menuArray,
+    "routes count:",
+    router.getRoutes().length
+  );
+
+  // 如果没有加载过动态路由，则先加载
+  if (
+    !hasDynamicRoutes &&
+    menuArray != null &&
+    menuArray.length > 0 &&
+    menuArray != "undefined"
+  ) {
+    //需要动态加载路由信息，此时有了路由的路径
+    initRouter();
+    next({ path: to.path });
+    return;
+  }
+  //第一次访问登录页面时，并没有菜单列表，此时也动态加载了路由并让length变成了3，导致登录后不会再执行初始化加载路由,加上其他额外条件
+  // 一开始只有3条初始路由 404,login,redirect
+  // console.log("router.getRoutes()===========>",router.getRoutes()); // 3 -> 21
+  // if(router.getRoutes().length === 3 && Array.isArray(menuArray) && menuArray.length > 0) {
+  //   //需要动态加载路由信息，此时有了路由的路径
+  //   initRouter();
+  //   next({path: to.path});
+  //   return;
+  // }
+  let menus = store.getters.menus;
+  let currentMenu = null;
+
+  // 特殊处理首页路径
+  if (currentPath === "/main/dashboard" || currentPath === "/dashboard") {
+    store.commit("addTab", {
+      title: "首页导览",
+      path: "/main/dashboard",
+    });
     next();
-  });
+    return;
+  }
+
+  let firstLevelSize = menus.length;
+  let secondLevelSize = 0;
+
+  for (let i = 0; i < firstLevelSize && currentMenu == null; i++) {
+    secondLevelSize = menus[i].children.length;
+    for (let j = 0; j < secondLevelSize; j++) {
+      //说明找到了
+      if (menus[i].children[j].path == currentPath) {
+        currentMenu = menus[i].children[j];
+        break;
+      }
+    }
+  }
+
+  if (currentMenu) {
+    //调用vuex判断是否需要添加到state的tabs中
+    store.commit("addTab", currentMenu);
+  }
+  //放行
+  next();
+});
   
 export default router

@@ -1,10 +1,13 @@
+<!-- TabNav.vue - 修改后 -->
 <template>
   <div class="container_tab">
     <ul class="tab_nav_box">
       <li v-for="(item, index) in $store.getters.tabs"
-          :key="item.title"  :class="{ active: $route.path === item.path }" >
+          :key="item.path"
+          :class="{ active: $route.path === item.path }" >
         <router-link :to="item.path">{{item.title}}</router-link>
-        <el-icon v-if="index !== 0">
+        <!-- 修改：根据 affix 属性判断是否显示关闭按钮 -->
+        <el-icon v-if="!item.affix">
           <CloseBold @click="onCloseTabIndex(index)"/>
         </el-icon>
       </li>
@@ -17,13 +20,38 @@ export default {
   name: "TabNav",
   methods: {
     /**
-     * 点击了tab选项卡
+     * 点击了 tab 选项卡
      */
-    onCloseTabIndex(index){
-      this.$store.commit("deleteTabByIndex",index);
-      //获取上一个tab
-      let path = this.$store.getters.tabs[this.$store.getters.tabs.length-1].path;
-      this.$router.push(path);
+     onCloseTabIndex(index) {
+      const tabs = this.$store.getters.tabs;
+      const currentPath = this.$route.path;
+
+      // 关键：在删除前保存要关闭的 tab 信息
+      const closedTab = tabs[index];
+
+      // 如果是固定标签，不允许关闭
+      if (closedTab.affix) {
+        return
+      }
+
+      // 提交删除
+      this.$store.commit("deleteTabByIndex", index);
+
+      // 如果关闭的是当前页面的 tab，需要跳转到其他页面
+      if (closedTab.path === currentPath) {
+        // 使用 $nextTick 等待 store 更新
+        this.$nextTick(() => {
+          const newTabs = this.$store.getters.tabs;
+          if (newTabs.length > 0) {
+            // 还有 tab，跳转到最后一个
+            const lastTab = newTabs[newTabs.length - 1];
+            this.$router.push(lastTab.path);
+          } else {
+            // 没有 tab 了，跳转到默认首页
+            this.$router.push('/main/dashboard');
+          }
+        });
+      }
     }
   },
 }

@@ -43,7 +43,7 @@ export default {
   },
   data() {
     return {
-      user: getSessionStorage('user')
+      user: getSessionStorage('user') || {}
     }
   },
   methods: {
@@ -51,7 +51,7 @@ export default {
       this.$router.push('/home')
     },
     logout() {
-      sessionStorage.setItem('token', null)
+      sessionStorage.removeItem('token')
       setSessionStorage('user', null)
       this.$store.commit('addMenus', [])
       this.$store.commit('clearTab', [])

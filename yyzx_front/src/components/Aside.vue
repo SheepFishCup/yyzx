@@ -10,7 +10,13 @@
         :default-active="$route.path"
         :router="true"
         unique-opened
-        text-color="#fff">
+        text-color="#fff"
+      >
+        <!-- 首页菜单项 -->
+      <el-menu-item index="/main/dashboard">
+        <el-icon><House /></el-icon>
+        <span>首页</span>
+      </el-menu-item>
 
       <template v-for="menu in $store.getters.menus" >
         <el-sub-menu :index="menu.menusIndex" > 
@@ -37,8 +43,12 @@
 
 
 <script>
+import { House } from '@element-plus/icons-vue'
 export default {
   name: 'Aside',
+  components: {
+    House
+  },
   methods: {
    
     },
@@ -48,16 +58,17 @@ export default {
     "$route.path": {
         handler: function (newVal, oldVal) {
         console.log("route===========>", this.$route) // bed/bedMap
-        // if(true){
-        //   return;
-        //     }
+        // 排除登录页和首页
+        if (newVal == "/login" || newVal == "/home" || newVal == "/main/dashboard") {
+          return;
+        }
         //判断当前tab中是否已经存在
         let index = this.$store.getters.tabs.findIndex(function (value, key) {
           return value.path === newVal;
         });
         // 前面已经构建好了
         // console.log("index,newVal===========>", index,newVal);
-        if (index != -1 || newVal == "/login") {
+        if (index != -1) {
           return;
         }
         let menuName = this.$store.getters.getMenuNameByUrl(newVal);

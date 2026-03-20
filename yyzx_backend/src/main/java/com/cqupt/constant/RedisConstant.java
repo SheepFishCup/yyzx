@@ -27,4 +27,7 @@ public class RedisConstant {
     // 图片验证码相关
     public static final String IMAGE_CODE_PREFIX = "image:code:";       // 图片验证码前缀
     public static final long IMAGE_CODE_EXPIRE = 300;                    // 图片验证码有效期（5分钟）
+    // 密码重置相关
+    public static final String PASSWORD_RESET_PREFIX = "pwd:reset:";     // 密码重置令牌前缀
+    public static final long PASSWORD_RESET_EXPIRE = 1800;               // 重置链接有效期（30分钟）
 }

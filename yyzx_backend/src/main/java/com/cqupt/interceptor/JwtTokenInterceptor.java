@@ -53,6 +53,14 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         if (request.getRequestURI().toString().contains("images")) {
             return true;
         }
+        // 新增：放行密码重置相关接口（不需要登录）
+        String uri = request.getRequestURI();
+        if (uri.contains("/admin/forgotPassword") ||
+                uri.contains("/admin/resetPassword") ||
+                uri.contains("/admin/verifyResetToken")) {
+            log.info("放行密码重置接口：{}", uri);
+            return true;
+        }
         //1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getUserHeader());
         //2、校验令牌
@@ -86,14 +94,10 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             //3、通过，放行
             return true;
         } catch (ExpiredJwtException e) {
-            response.setStatus(401);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"msg\":\"token 已过期\"}");
+            log.info("token已过期");
             throw new BusinessException("token已过期");
         } catch (Exception e){
-            response.setStatus(401);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"msg\":\"token 不合法\"}");
+            log.info("token不合法");
             throw new BusinessException("token不合法");
         }
     }

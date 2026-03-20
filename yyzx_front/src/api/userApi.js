@@ -32,6 +32,20 @@ function delUser(data){
 function findAllUser(data){
     return http.get('/admin/findAllUserPage',{params:data})
 }
+// 用户忘记密码- 发送重置邮件
+function UserforgotPassword(data){
+    return http.post('/admin/forgotPassword', data, { useJson: true })
+}
+
+// 用户重置密码- 重置密码
+function UserresetPassword(data){
+    return http.post('/admin/resetPassword', data, { useJson: true })
+}
+
+// 用户验证重置令牌
+function UserverifyResetToken(token){
+    return http.get('/admin/verifyResetToken', { params: { token } })
+}
 export{
     login,
     getUserList,
@@ -40,5 +54,8 @@ export{
 	delUser,
 	findAllUser,
     generateCaptcha,
-    loginWithCaptcha
+    loginWithCaptcha,
+    UserforgotPassword,
+    UserresetPassword,
+    UserverifyResetToken
 }

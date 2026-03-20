@@ -6,13 +6,17 @@ package com.cqupt.service.impl;
  * @description
  */
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cqupt.constant.*;
 import com.cqupt.context.BaseContext;
+import com.cqupt.dto.ForgotPasswordDTO;
 import com.cqupt.dto.LoginWithCodeDTO;
+import com.cqupt.dto.ResetPasswordDTO;
 import com.cqupt.dto.UserDTO;
 import com.cqupt.exception.AccountLockedException;
 import com.cqupt.exception.AccountNotFoundException;
@@ -22,9 +26,9 @@ import com.cqupt.mapper.MenuMapper;
 import com.cqupt.mapper.RoleMenuMapper;
 import com.cqupt.mapper.UserMapper;
 import com.cqupt.pojo.Menu;
-import com.cqupt.pojo.RoleMenu;
 import com.cqupt.pojo.User;
 import com.cqupt.properties.JwtProperties;
+import com.cqupt.service.MailService;
 import com.cqupt.service.UserService;
 import com.cqupt.utils.JwtUtil;
 import com.cqupt.utils.ResultVo;
@@ -41,10 +45,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.AccessDeniedException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -63,6 +65,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private RedissonClient redissonClient;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private MailService mailService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -209,10 +213,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     // 校验用户名是否已存在
                     QueryWrapper<User> queryWrapper = new QueryWrapper<>();
                     queryWrapper.eq("username", user.getUsername());
-                    User existingUser = getOne(queryWrapper);
-                    if (existingUser != null) {
+                    if (count(queryWrapper) > 0) {
                         status.setRollbackOnly();
                         throw new BusinessException("用户名已存在");
+                    }
+
+                    // 校验手机号是否已存在
+                    queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("phone_number", user.getPhoneNumber());
+                    if (count(queryWrapper) > 0) {
+                        status.setRollbackOnly();
+                        throw new BusinessException("手机号已存在");
+                    }
+
+                    // 校验邮箱是否已存在
+                    queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("email", user.getEmail());
+                    if (count(queryWrapper) > 0) {
+                        status.setRollbackOnly();
+                        throw new BusinessException("邮箱已存在");
                     }
                     // 插入用户
                     user.setIsDeleted(0);
@@ -401,5 +420,157 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         user.setMenuList(menus);
         return menus;
+    }
+
+    @Override
+    public ResultVo forgotPassword(ForgotPasswordDTO forgotDTO) {
+        String email = forgotDTO.getEmail();
+
+        // 1. 校验图片验证码
+        String codeKey = RedisConstant.IMAGE_CODE_PREFIX + forgotDTO.getUuid();
+        Object savedCodeObj = redisTemplate.opsForValue().get(codeKey);
+        String savedCode = savedCodeObj != null ? savedCodeObj.toString() : null;
+
+
+        if (savedCode == null) {
+            return ResultVo.fail("验证码已过期，请刷新");
+        }
+
+        if (!savedCode.equalsIgnoreCase(forgotDTO.getCaptcha())) {
+            return ResultVo.fail("验证码错误");
+        }
+
+        // 验证成功后删除验证码
+        redisTemplate.delete(codeKey);
+
+        // 2. 根据邮箱查询用户
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.eq("email", email);
+        qw.eq("is_deleted", 0);
+        List<User> userList = list(qw);
+
+        if (userList == null || userList.isEmpty()) {
+            return ResultVo.fail("该邮箱未注册");
+        }
+
+        if (userList.size() > 1) {
+            log.error("发现重复的用户邮箱：{}, 记录数：{}", email, userList.size());
+            return ResultVo.fail("系统数据异常，存在重复邮箱，请联系管理员");
+        }
+
+        User user = userList.get(0);
+        if (user == null) {
+            return ResultVo.fail("该邮箱未注册");
+        }
+
+        // 3. 检查频率限制（防止恶意请求）
+        String limitKey = RedisConstant.PASSWORD_RESET_PREFIX + "limit:" + email;
+        Object lastSendTimeObj = redisTemplate.opsForValue().get(limitKey);
+
+        if (lastSendTimeObj != null) {
+            String lastSendTime = lastSendTimeObj.toString();
+            long timeDiff = System.currentTimeMillis() - Long.parseLong(lastSendTime);
+            if (timeDiff < 60000) {
+                return ResultVo.fail("请求过于频繁，请稍后再试");
+            }
+        }
+
+        // 4. 生成重置令牌
+        String token = UUID.randomUUID().toString().replace("-", "");
+        String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + token;
+
+        // 存储令牌，关联用户 ID 和邮箱
+        Map<String, String> tokenData = new HashMap<>();
+        tokenData.put("userId", user.getId().toString());
+        tokenData.put("email", user.getEmail());
+
+        redisTemplate.opsForValue().set(tokenKey,
+                JSON.toJSONString(tokenData),
+                Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+
+        // 5. 记录发送时间
+        redisTemplate.opsForValue().set(limitKey,
+                String.valueOf(System.currentTimeMillis()),
+                Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+
+        // 6. 构建重置链接（前端页面）
+        String resetUrl = "http://localhost:8080/reset-password?token=" + token;
+
+        // 7. 发送邮件
+        try {
+            mailService.sendPasswordResetEmail(user.getEmail(), resetUrl, user.getUsername());
+            log.info("密码重置邮件发送成功，用户：{}", user.getUsername());
+            return ResultVo.ok("重置链接已发送到您的邮箱，请查收");
+        } catch (Exception e) {
+            log.error("邮件发送失败", e);
+            return ResultVo.fail("邮件发送失败，请稍后重试");
+        }
+    }
+
+    @Override
+    public ResultVo resetPassword(ResetPasswordDTO resetDTO) {
+        // 1. 校验新密码和确认密码是否一致
+        if (!resetDTO.getNewPassword().equals(resetDTO.getConfirmPassword())) {
+            return ResultVo.fail("两次输入的密码不一致");
+        }
+
+        // 2. 校验令牌
+        String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + resetDTO.getToken();
+        String tokenDataStr = redisTemplate.opsForValue().get(tokenKey).toString();
+
+        if (tokenDataStr == null) {
+            return ResultVo.fail("重置链接已失效，请重新申请");
+        }
+
+        // 3. 解析令牌数据
+        Map<String, String> tokenData = JSON.parseObject(tokenDataStr, new TypeReference<Map<String, String>>(){});
+        Long userId = Long.parseLong(tokenData.get("userId"));
+
+        // 4. 更新密码
+        User user = getById(userId);
+        if (user == null) {
+            return ResultVo.fail("用户不存在");
+        }
+
+        String encodedPassword = passwordEncoder.encode(resetDTO.getNewPassword());
+
+        UpdateWrapper<User> uw = new UpdateWrapper<>();
+        uw.eq("id", userId);
+        uw.set("password", encodedPassword);
+        uw.set("update_time", LocalDateTime.now());
+
+        boolean updated = update(uw);
+
+        if (updated) {
+            // 5. 删除已使用的令牌
+            redisTemplate.delete(tokenKey);
+
+            // 6. 删除该用户的所有登录 token（强制下线）
+            String tokenPattern = RedisConstant.USER_TOKEN_PREFIX + userId + "*";
+            Set<String> tokens = redisTemplate.keys(tokenPattern);
+            if (tokens != null && !tokens.isEmpty()) {
+                redisTemplate.delete(tokens);
+            }
+
+            log.info("密码重置成功，用户 ID：{}", userId);
+            return ResultVo.ok("密码重置成功，请使用新密码登录");
+        }
+
+        return ResultVo.fail("密码重置失败");
+    }
+
+    @Override
+    public ResultVo verifyResetToken(String token) {
+        // 构建令牌 key
+        String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + token;
+        // 获取令牌数据
+        Object tokenDataObj = redisTemplate.opsForValue().get(tokenKey);
+        String tokenData = tokenDataObj != null ? tokenDataObj.toString() : null;
+
+        if (tokenData == null) {
+            return ResultVo.fail("令牌已失效");
+        }
+
+        return ResultVo.ok("令牌有效");
     }
 }

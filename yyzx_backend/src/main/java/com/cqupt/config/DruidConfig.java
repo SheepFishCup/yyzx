@@ -19,7 +19,7 @@ public class DruidConfig {
     @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource druidDataSource() {
         DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setUrl("jdbc:mysql://localhost:3306/nursinghome?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false");
+        dataSource.setUrl("jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false");
         dataSource.setUsername("root");
         dataSource.setPassword("123456");
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");

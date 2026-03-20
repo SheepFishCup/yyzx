@@ -7,7 +7,7 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/nursinghome?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
+    url: jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
     username: root
     password: 123456
 
@@ -35,6 +35,17 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
 
+  mail:
+    host: smtp.qq.com  # 邮箱服务器（QQ邮箱）
+    port: 587
+    username: 2855733759@qq.com  # 你的邮箱
+    password: ppugcbdoifvdddch  # 邮箱授权码（不是登录密码）
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 # mybatis-plus配置
 mybatis-plus:
   configuration:

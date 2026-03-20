@@ -10,14 +10,19 @@
     <div class="carousel-section">
       <el-carousel :interval="4000" type="card" height="400px">
         <el-carousel-item v-for="(item, index) in carouselImages" :key="index">
-          <div class="carousel-content">
-            <img :src="item.image" :alt="item.title" class="carousel-image" />
-            <div class="carousel-info">
-              <h3>{{ item.title }}</h3>
-              <p>{{ item.description }}</p>
-            </div>
+        <div class="carousel-content">
+          <img 
+            :src="item.image" 
+            :alt="item.title" 
+            class="carousel-image"
+            @error="handleImageError($event, item)"
+          />
+          <div class="carousel-info">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
           </div>
-        </el-carousel-item>
+        </div>
+      </el-carousel-item>
       </el-carousel>
     </div>
 
@@ -108,22 +113,22 @@ export default {
       // 轮播图数据
       carouselImages: [
         {
-          image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&h=400&fit=crop',
+          image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=600&h=300&fit=crop&q=75&auto=format',
           title: '温馨居住环境',
           description: '宽敞明亮的房间，温馨舒适的家居布置'
         },
         {
-          image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=400&fit=crop',
+          image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=300&fit=crop&q=75&auto=format',
           title: '专业护理服务',
           description: '专业护理团队 24 小时贴心照料'
         },
         {
-          image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=400&fit=crop',
+          image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=300&fit=crop&q=75&auto=format',
           title: '医疗健康保障',
           description: '定期健康检查，医疗保障完善'
         },
         {
-          image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
+          image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=300&fit=crop&q=75&auto=format',
           title: '丰富文化活动',
           description: '多彩的文娱活动，充实的晚年生活'
         }
@@ -185,6 +190,12 @@ export default {
   methods: {
     navigateTo(path) {
       this.$router.push(path)
+    },
+    // 图片加载失败处理
+    handleImageError(event, item) {
+      // 设置默认占位图
+      event.target.src = '/images/placeholder.png'
+      console.warn(`图片加载失败：${item.title}`)
     }
   }
 }
@@ -192,27 +203,38 @@ export default {
 
 <style scoped>
 .home-container {
-  padding: 20px;
+  /* padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 100px); */
+  padding: 20px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 160px);
 }
 
 /* 欢迎区域 */
 .welcome-section {
+  /* text-align: center;
+  padding: 30px 20px;
+  color: white; */
   text-align: center;
   padding: 30px 20px;
-  color: white;
+  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  margin-bottom: 20px;
 }
 
 .welcome-title {
   font-size: 36px;
   font-weight: bold;
   margin-bottom: 10px;
+  color: white;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .welcome-subtitle {
   font-size: 18px;
+  color: white;
   opacity: 0.9;
 }
 
