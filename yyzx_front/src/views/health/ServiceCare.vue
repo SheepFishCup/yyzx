@@ -239,19 +239,20 @@
     },
     data() {
       return {
-        //分页属性封装--护理项目
+         // 分页属性封装--护理项目
         pageItem: {
           total: 0,
           pageSize: 6,
           currentPag: 1,
           pagCount: 0
         },
-        //查询条件封装--护理项目
+        // 查询条件封装--护理项目
         conditionItem: {
-          customerId: "", //客户编号
-          pageSize: "1" //默认第一页
+          customerId: "",
+          current: 1,
+          size: 6
         },
-        //分页属性封装 --客户
+        // 分页属性封装 --客户
         page: {
           total: 0,
           pageSize: 6,
@@ -263,7 +264,8 @@
         //查询条件封装--客户
         condition: {
           customerName: "",
-          pageSize: "1" //默认第一页
+          current: 1,      // ✅ 当前页
+          pageSize: 6      // ✅ 每页条数
         },
         //续费模态框数据
         dialog: {
@@ -290,38 +292,38 @@
       };
     },
     methods: {
-      //点击查询
+      // 点击查询
       query() {
-        //清空护理项目数据表
         this.conditionItem.customerId = "";
+        this.conditionItem.current = 1;
+        this.conditionItem.pageSize = 6;
         this.customerItemList = [];
-  
-        this.condition.pageSize = "1"; //回到第一页
+        this.condition.current = 1;
+        this.condition.pageSize = 6;
         this.getKhxxList();
       },
-      //选中页码-客户
+      // 选中页码 - 客户
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
+        this.condition.current = curPage;
         this.getKhxxList();
-        //清空护理项目数据表
         this.conditionItem.customerId = "";
+        this.conditionItem.current = 1;
+        this.conditionItem.pageSize = 6;
         this.customerItemList = [];
       },
-      //选中页码-护理项目
+      // 选中页码 - 护理项目
       handleItemChange(curPage) {
         this.pageItem.currentPag = curPage;
-        this.conditionItem.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格:
+        this.conditionItem.current = curPage;
         this.listCustomerItem();
       },
-      //选中某客户行:获取用户的服务项目列表
+      // 选中某客户行
       handleChangeCustomer(row) {
         if (row != null) {
-          //点击页码会清空row因此做出判断逻辑
-          //构建查询条件
           this.conditionItem.customerId = row.id;
+          this.conditionItem.current = 1;
+          this.conditionItem.pageSize = 6;
           this.listCustomerItem();
         }
       },
@@ -366,24 +368,30 @@
           this.$message.warning("请选中表格中的客户");
         }
       },
-      //api-查询客户信息列表-分页
+      // api-查询客户信息列表 - 分页
       getKhxxList() {
+        console.log('发送的 condition:', this.condition);
         getKhxxList(this.condition).then(res => {
           this.khxxList = res.data.records;
-          this.page.total = res.data.total; //总记录数
-          this.page.pageSize = res.data.size; //每页显示条数
-          this.page.currentPag = res.data.current; //当前页码
-          this.page.pagCount = res.data.pages; //总页数
+          this.page.total = res.data.total;
+          this.page.pageSize = res.data.size;
+          this.page.currentPag = res.data.current;
+          this.page.pagCount = res.data.pages;
+        }).catch(err => {
+          console.error('请求失败:', err);
         });
       },
-      //api-选中某客户行:获取用户的服务项目列表
+      // api-获取用户的服务项目列表
       listCustomerItem() {
+        console.log('发送的 conditionItem:', this.conditionItem);
         listCustomerItem(this.conditionItem).then(res => {
           this.customerItemList = res.data.records;
-          this.pageItem.total = res.data.total; //总记录数
-          this.pageItem.pageSize = res.data.size; //每页显示条数
-          this.pageItem.currentPag = res.data.current; //当前页码
-          this.pageItem.pagCount = res.data.pages; //总页数
+          this.pageItem.total = res.data.total;
+          this.pageItem.pageSize = res.data.size;
+          this.pageItem.currentPag = res.data.current;
+          this.pageItem.pagCount = res.data.pages;
+        }).catch(err => {
+          console.error('请求失败:', err);
         });
       },
       //api-移除客户护理项目

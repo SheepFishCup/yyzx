@@ -61,6 +61,11 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             log.info("放行密码重置接口：{}", uri);
             return true;
         }
+        // 新增：放行钉钉机器人测试接口（不需要登录）
+        if (uri.contains("/test/dingtalk")) {
+            log.info("放行钉钉测试接口：{}", uri);
+            return true;
+        }
         //1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getUserHeader());
         //2、校验令牌
@@ -97,6 +102,12 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             log.info("token已过期");
             throw new BusinessException("token已过期");
         } catch (Exception e){
+            // 判断是否是客户端断开连接的异常
+            if (e.getMessage() != null && e.getMessage().contains("远程主机强迫关闭")) {
+                log.warn("客户端提前断开连接：{}", e.getMessage());
+                // 不抛出异常，直接返回
+                return true;
+            }
             log.info("token不合法");
             throw new BusinessException("token不合法");
         }

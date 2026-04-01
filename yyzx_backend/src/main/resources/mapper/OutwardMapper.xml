@@ -47,5 +47,8 @@
         <if test="userId!=null and userId!=''">
             and cs.user_id=#{userId}
         </if>
+        <if test="customerId!=null and customerId!=''">
+            and ow.customer_id= #{customerId}
+        </if>
     </select>
 </mapper>

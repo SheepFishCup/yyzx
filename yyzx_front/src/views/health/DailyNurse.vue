@@ -269,46 +269,47 @@
           currentPag: 1,
           pagCount: 0
         },
-        //查询条件-客户护理项目
+        // 查询条件 - 客户护理项目
         conditionItem: {
-          customerId: "", //客户编号
-          pageSize: "1" //默认第一页
+          customerId: "",
+          current: 1,
+          pageSize: 6
         },
-        //查询条件-客户列表
+        // 查询条件 - 客户列表
         condition: {
           userId: getSessionStorage("user").id,
           customerName: "",
-          pageSize: "1" //默认第一页
+          current: 1,
+          pageSize: 6
         },
-        customerItemList: [], //客户护理项目列表
-        khxxList: [],
-        //分页属性封装-客户列表
+        // 分页属性封装 - 客户列表
         page: {
           total: 0,
           pageSize: 6,
           currentPag: 1,
           pagCount: 0
-        }
+        },
+        customerItemList: [], //客户护理项目列表
+        khxxList: [],
+        //分页属性封装-客户列表
       };
     },
     methods: {
-      //点击查询
+      // 点击查询
       query() {
-        this.condition.pageSize = "1"; //回到第一页
+        this.condition.current = 1;
         this.getKhxxList();
       },
-      //选中页码-客户信息列表
+      // 选中页码 - 客户信息列表
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
+        this.condition.current = curPage;
         this.getKhxxList();
       },
-      //选中页码-客户护理项目
+      // 选中页码 - 客户护理项目
       handleItemChange(curPage) {
         this.pageItem.currentPag = curPage;
-        this.conditionItem.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格:
+        this.conditionItem.current = curPage;
         this.listCustomerItem();
       },
       //打开抽屉
@@ -319,12 +320,11 @@
         //获取用户的服务项目列表
         this.listCustomerItem();
       },
-      //关闭抽屉
+      // 关闭抽屉
       handleClose() {
         this.drawer.openFlag = false;
-        //初始化数据
         this.conditionItem.customerId = "";
-        this.conditionItem.pageSize = "1";
+        this.conditionItem.current = 1;
         this.customerItemList = [];
       },
       //关闭抽屉-内层
@@ -393,24 +393,24 @@
           }
         });
       },
-      //api-获取用户的服务项目列表
+      // api-获取用户的服务项目列表
       listCustomerItem() {
         listCustomerItem(this.conditionItem).then(res => {
           this.customerItemList = res.data.records;
-          this.pageItem.total = res.data.total; //总记录数
-          this.pageItem.pageSize = res.data.size; //每页显示条数
-          this.pageItem.currentPag = res.data.current; //当前页码
-          this.pageItem.pagCount = res.data.pages; //总页数
+          this.pageItem.total = res.data.total;
+          this.pageItem.pageSize = res.data.size;
+          this.pageItem.currentPag = res.data.current;
+          this.pageItem.pagCount = res.data.pages;
         });
       },
-      //api-查询客户信息列表-分页
+      // api-查询客户信息列表 - 分页
       getKhxxList() {
         getKhxxList(this.condition).then(res => {
           this.khxxList = res.data.records;
-          this.page.total = res.data.total; //总记录数
-          this.page.pageSize = res.data.size; //每页显示条数
-          this.page.currentPag = res.data.current; //当前页码
-          this.page.pagCount = res.data.pages; //总页数
+          this.page.total = res.data.total;
+          this.page.pageSize = res.data.size;
+          this.page.currentPag = res.data.current;
+          this.page.pagCount = res.data.pages;
         });
       }
     },

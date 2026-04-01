@@ -1,9 +1,5 @@
 // 引入封装好的axios  @等价于/src
 import http from '@/request/request.js';
-//用户登录
-function login(data){
-    return http.post('/admin/login',data)
-}
 //生成验证码
 function generateCaptcha(data){
     return http.get('/admin/generate',{params:data})
@@ -47,7 +43,6 @@ function UserverifyResetToken(token){
     return http.get('/admin/verifyResetToken', { params: { token } })
 }
 export{
-    login,
     getUserList,
 	addUser,
 	updateUser,

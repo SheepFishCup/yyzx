@@ -3,9 +3,36 @@
 </template>
 
 <script>
+import websocketClient from '@/utils/websocket';
 export default {
     name: 'App',
-    components: {}
+    components: {},
+    // App.vue 中修改
+    mounted() {
+        const userInfo = JSON.parse(sessionStorage.getItem('user') || '{}');
+        const userId = userInfo.id;
+
+        if (userId) {
+            websocketClient.connect(userId);
+            // 统一注册通知回调
+            websocketClient.onNotification((title, content, type) => {
+                console.log('🔔 收到通知:', title, content, type)
+                
+                // 使用 Element UI 的通知组件
+                this.$notify({
+                    title: title,
+                    message: content,
+                    type: type,
+                    duration: 3000,
+                    position: 'top-right'
+                });
+            });
+        }
+    },
+  beforeDestroy() {
+    // 组件销毁时断开连接
+    websocketClient.disconnect();
+  }
 };
 </script>
 

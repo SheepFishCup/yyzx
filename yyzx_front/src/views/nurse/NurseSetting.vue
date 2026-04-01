@@ -178,9 +178,11 @@
           customerId:"",
           isInLevelItemList: [] //级别的护理项目列表
         },
+        // 修改后 ✅
         condition: {
           customerName: "",
-          pageSize: "1" //默认第一页
+          current: 1,      // 当前页
+          pageSize: 6      // 每页条数
         },
         khxxList: [],
         //分页属性封装
@@ -193,15 +195,16 @@
       };
     },
     methods: {
-      //点击查询
+      // 修改后 ✅
       query() {
-        this.condition.pageSize = "1"; //回到第一页
+        this.condition.current = 1;
+        this.condition.pageSize = 6;
         this.getKhxxList();
       },
       //选中页码
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
+        this.condition.current = curPage; //current
         //重新渲染表格
         this.getKhxxList();
       },

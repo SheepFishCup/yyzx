@@ -167,16 +167,19 @@
           pagCount: 0
         },
         btnFlag: true,
+        // 修改后
         queryParams: {
           customerName: "",
-          pageSize: "1" //默认第一页
+          current: 1,      // ✅ 当前页
+          pageSize: 6      // ✅ 每页条数
         },
         preferenceList: [],
         customerList:[],
          //查询条件封装--客户
-        condition: {
+         condition: {
           customerName: "",
-          pageSize: "1" //默认第一页
+          current: 1,      // ✅ 当前页
+          pageSize: 6      // ✅ 每页条数
         },
       };
     },
@@ -187,9 +190,15 @@
     methods: {
       //点击查询
       query() {
-        this.queryParams.pageSize = "1"; //回到第一页
+        this.queryParams.current = 1;
+        this.condition.current = 1;
         this.getPreferenceList();
         this.getKhxxList();
+      },
+      handleCurrentChange(curPage) {
+        this.page.currentPag = curPage;
+        this.queryParams.current = curPage;
+        this.getPreferenceList();
       },
       //点击修改
       edit(row) {
@@ -232,8 +241,8 @@
                 if (res.flag) {
                   this.$message.success(res.message);
                   //刷新数据表格(回到最初查询状态)
-                  this.queryParams.status = "1";
-                  this.queryParams.pageSize = "1"; //回到第一页
+                  this.queryParams.current = 1;  // ✅ 改为 current
+                  this.queryParams.pageSize = 6; // ✅ 改为 6
                   this.queryParams.customerName = "";
                   this.getPreferenceList();
                   this.getKhxxList();

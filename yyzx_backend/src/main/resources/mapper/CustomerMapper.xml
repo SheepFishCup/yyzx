@@ -61,10 +61,22 @@
         left join bed b on c.bed_id = b.id
         <where>
             <if test="manType != null and manType == 1">
-                and (select count(1) from customernurseitem cni where cni.customer_id = c.id and cni.is_deleted = 0) = 0
+                <!-- 优化 1: 无护理项目 - 使用 NOT EXISTS -->
+                AND NOT EXISTS (
+                SELECT 1 FROM customernurseitem cni
+                WHERE cni.customer_id = c.id
+                AND cni.is_deleted = 0
+                LIMIT 1
+                )
             </if>
             <if test="manType != null and manType == 2">
-                and (select count(1) from customernurseitem cni where cni.customer_id = c.id and cni.is_deleted = 0) > 0
+                <!-- 优化 2: 有护理项目 - 使用 EXISTS -->
+                AND EXISTS (
+                    SELECT 1 FROM customernurseitem cni
+                    WHERE cni.customer_id = c.id
+                    AND cni.is_deleted = 0
+                    LIMIT 1
+                )
             </if>
             <if test="manType != null and manType == 3">
                 and c.user_id = -1
@@ -79,4 +91,5 @@
         </where>
         order by c.id desc
     </select>
+
 </mapper>

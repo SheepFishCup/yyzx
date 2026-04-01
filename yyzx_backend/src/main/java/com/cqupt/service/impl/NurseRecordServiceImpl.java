@@ -75,8 +75,9 @@ public class NurseRecordServiceImpl extends ServiceImpl<NurseRecordMapper, Nurse
 
     @Override
     public ResultVo<Page<NurseRecordsVo>> queryNurseRecordsVo(NurseRecordDTO nurseRecordDTO) throws Exception {
-
-        Page<NurseRecordsVo> page = new Page<>(nurseRecordDTO.getPageSize(),6);
+        Integer current = nurseRecordDTO.getCurrent() != null ? nurseRecordDTO.getCurrent() : 1;
+        Integer pageSize = nurseRecordDTO.getPageSize() != null ? nurseRecordDTO.getPageSize() : 10;
+        Page<NurseRecordsVo> page = new Page<>(current,pageSize);
         nurseRecordMapper.selectNurseRecordsVo(page,nurseRecordDTO.getCustomerId());
         return ResultVo.ok(page);
     }

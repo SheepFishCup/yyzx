@@ -32,6 +32,7 @@ import com.cqupt.service.MailService;
 import com.cqupt.service.UserService;
 import com.cqupt.utils.JwtUtil;
 import com.cqupt.utils.ResultVo;
+import com.cqupt.websocket.WebSocketServer;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
@@ -67,77 +68,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private TransactionTemplate transactionTemplate;
     @Autowired
     private MailService mailService;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    @Override
-    public ResultVo<User> login(String username, String password) throws Exception {
-        // 1. 先从Redis缓存查询用户（避免每次都查库）
-        String userKey = RedisConstant.USER_INFO_PREFIX + username;
-        User user = (User) redisTemplate.opsForValue().get(userKey);
-        if (user == null) {
-            // 缓存不存在，查询数据库
-            QueryWrapper<User> qw = new QueryWrapper<>();
-            qw.eq("username", username);
-            user = getOne(qw);
-            if (user != null) {
-                // 存入缓存（设置过期时间）
-                redisTemplate.opsForValue().set(userKey, user,
-                        Duration.ofHours(RedisConstant.USER_CACHE_HOURS));
-            }
-        }
-        if (user==null){
-            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
-        }
-
-//        password = DigestUtils.md5DigestAsHex(password.getBytes());
-        if (!passwordEncoder.matches(password, user.getPassword())){
-            recordLoginError(username);
-            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
-        }
-        if (user.getStatus() == StatusConstant.DISABLE){
-            throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
-        }
-        if (user.getRoleId()==null){
-            return ResultVo.fail("无角色，请联系管理员");
-        }
-        if (user!=null){
-            if (user.getIsDeleted()==0) {
-                //根据用户角色获得当前用户的菜单
-                //1.获取得到角色对应的menu_id
-                QueryWrapper listRoleQw = new QueryWrapper<>();
-                listRoleQw.eq("role_id",user.getRoleId());
-                listRoleQw.select("menu");
-                List<Integer> menuIds = roleMenuMapper.selectObjs(listRoleQw);//管理员 1、2、3、4、5、6
-                //2.根据menu_id获取得到一级菜单列表
-                List<Menu> menus = menuMapper.selectBatchIds(menuIds);//1床位管理 2客户管理
-                //3.查询子菜单
-                for (Menu menu : menus) {
-                    QueryWrapper listMenuQw = new QueryWrapper<>();
-                    listMenuQw.eq("parent_id", menu.getId());//1
-                    menu.setChildren(menuMapper.selectList(listMenuQw));
-                }
-                user.setMenuList(menus);
-                //如果登录验证成功，则需要生成令牌token(token就是按照特定规则生成的字符串)
-                Map<String, Object> claims = new HashMap<>();
-                claims.put(JwtClaimsConstant.EMP_ID, user.getId());
-                String token = JwtUtil.createToken(
-                        jwtProperties.getUserSecret(),
-                        jwtProperties.getUserExpire(),
-                        claims);
-
-                // 将 token 和用户信息存入 Redis
-                String tokenKey = RedisConstant.USER_TOKEN_PREFIX + user.getId();
-                redisTemplate.opsForValue().set(tokenKey, token, Duration.ofSeconds(RedisConstant.TOKEN_EXPIRE_SECONDS));
-
-                return ResultVo.ok(user, token);
-            }
-            return ResultVo.fail("无权限，请联系管理员");
-        }
-        return ResultVo.fail("用户名或密码错误");
-
-    }
     // 记录登录错误
     private void recordLoginError(String username) {
         String key = RedisConstant.LOGIN_ERROR_PREFIX + username;
@@ -169,15 +105,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (currentUser.getRoleId() != 1) { // 假设 1 是管理员
             throw new AccessDeniedException("无权访问");
         }
-        Page<User> MyPage = new Page<>(userDTO.getPageSize(),6);
-        QueryWrapper<User> qw = new QueryWrapper<>();
-        if (userDTO.getNickName()!=null && !"".equals(userDTO.getNickName())){
-            qw.like("nickname",userDTO.getNickName());
+        Integer current=userDTO.getCurrent()!=null?userDTO.getCurrent():1;
+        Integer pageSize=userDTO.getPageSize()!=null?userDTO.getPageSize():6;
+        // 参数范围校验，防止恶意请求
+        if (current < 1) {
+            current = 1;
         }
-        qw.eq("role_id",userDTO.getRoleId());
-        qw.eq("is_deleted",0);
-        page(MyPage,qw);
-        return ResultVo.ok(MyPage);
+        if (pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+        Page<User> myPage = new Page<>(current,pageSize);
+        // 使用 Mapper 查询（更直接、更可控）
+        userMapper.selectUserPage(myPage, userDTO.getNickName(), userDTO.getRoleId());
+
+        return ResultVo.ok(myPage);
     }
 
     @Override
@@ -188,9 +129,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (currentUser.getRoleId() != 1) { // 假设 1 是管理员
             throw new AccessDeniedException("无权访问");
         }
-        Page<User> myPage = new Page<>(userDTO.getPageSize(),6);
-        QueryWrapper<User> qw = new QueryWrapper<>();
-        page(myPage,qw);
+        Integer current=userDTO.getCurrent()!=null?userDTO.getCurrent():1;
+        Integer pageSize=userDTO.getPageSize()!=null?userDTO.getPageSize():6;
+        // 参数范围校验，防止恶意请求
+        if (current < 1) {
+            current = 1;
+        }
+        if (pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+        Page<User> myPage = new Page<>(current,pageSize);
+        userMapper.selectUserPage(myPage, userDTO.getNickName(), userDTO.getRoleId());
         return ResultVo.ok(myPage);
     }
 
@@ -317,6 +266,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo loginWithCaptcha(LoginWithCodeDTO loginDTO) {
+
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
         String captcha = loginDTO.getCaptcha();
@@ -395,6 +345,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String tokenKey = RedisConstant.USER_TOKEN_PREFIX + user.getId();
         redisTemplate.opsForValue().set(tokenKey, token, Duration.ofSeconds(RedisConstant.TOKEN_EXPIRE_SECONDS));
 
+        // 发送登录通知
+        // 发送WebSocket通知
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", 1);//1登录成功,2修改密码成功
+        message.put("userId", user.getId());
+        message.put("message", "登录成功，欢迎使用本颐养中心系统");
+        webSocketServer.sendToUser(user.getId().toString(),JSON.toJSONString(message));
 
         log.info("用户 {} 登录成功", username);
         return ResultVo.ok(user, token);

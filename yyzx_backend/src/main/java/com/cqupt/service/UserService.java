@@ -10,7 +10,7 @@ import com.cqupt.pojo.User;
 import com.cqupt.utils.ResultVo;
 
 public interface UserService extends IService<User> {
-    ResultVo<User> login(String username, String password) throws Exception;
+//    ResultVo<User> login(String username, String password) throws Exception;
 
     ResultVo<Page<User>> findUserPage(UserDTO userDTO) throws Exception;
 

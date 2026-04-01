@@ -145,78 +145,83 @@ export default {
       },
       nurseRecordList:[],
       khxxList: [],
-      //查询条件封装--客户
+      // 查询条件封装--客户
       condition: {
         customerName: "",
-        pageSize: "1" //默认第一页
+        current: 1,
+        pageSize: 6
       },
-      //查询条件封装--护理记录
+      // 查询条件封装--护理记录
       conditionRecord: {
-        customerId: "", //客户编号
-        pageSize: "1" //默认第一页
+        customerId: "",
+        current: 1,
+        pageSize: 6
       },
       
     };
   },
   methods: {
-    //点击查询
-    query() {
-      //清空护理记录数据表
-      this.nurseRecordList=[]
-      this.conditionRecord.customerId = "";
-
-      this.condition.pageSize = 1; 
-      this.getKhxxList();
-    },
-    //选中页码-客户
-    handleCurrentChange(curPage) {
-      this.page.currentPag = curPage;
-      this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-      //重新渲染表格
-      this.getKhxxList();
-      //清空护理记录数据表
-      this.nurseRecordList=[]
-      this.conditionRecord.customerId = "";
-    },
-   
-    //选中某客户行:获取用户的服务项目列表
-    handleChangeCustomer(row) {
-      if (row != null) {
-        //点击页码会清空row因此做出判断逻辑
-        //构建查询条件
-        this.conditionRecord.customerId = row.id;
-        this.listNurseRecordsVo();
-      }
-    },
-    //选中页码-护理记录
-    handleRecordChange(curPage) {
-      this.pageRecord.currentPag = curPage;
-      this.conditionRecord.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-      //重新渲染表格:
-      this.listCustomerItem();
-    },
+   // 点击查询
+  query() {
+    this.nurseRecordList = [];
+    this.conditionRecord.customerId = "";
+    this.conditionRecord.current = 1;
+    this.conditionRecord.pageSize = 6;
+    this.condition.current = 1;
+    this.condition.pageSize = 6;
+    this.getKhxxList();
+  },
+  // 选中页码 - 客户
+  handleCurrentChange(curPage) {
+    this.page.currentPag = curPage;
+    this.condition.current = curPage;
+    this.getKhxxList();
+    this.nurseRecordList = [];
+    this.conditionRecord.customerId = "";
+    this.conditionRecord.current = 1;
+    this.conditionRecord.pageSize = 6;
+  },
+  // 选中某客户行
+  handleChangeCustomer(row) {
+    if (row != null) {
+      this.conditionRecord.customerId = row.id;
+      this.conditionRecord.current = 1;
+      this.conditionRecord.pageSize = 6;
+      this.listNurseRecordsVo();
+    }
+  },
+     // 选中页码 - 护理记录
+  handleRecordChange(curPage) {
+    this.pageRecord.currentPag = curPage;
+    this.conditionRecord.current = curPage;
+    this.listNurseRecordsVo();
+  },
     
-    //api-查询客户信息列表-分页
-    getKhxxList() {
-      getKhxxList(this.condition).then(res => {
-        this.khxxList = res.data.records;
-        this.page.total = res.data.total; //总记录数
-        this.page.pageSize = res.data.size; //每页显示条数
-        this.page.currentPag = res.data.current; //当前页码
-        this.page.pagCount = res.data.pages; //总页数
-      });
-    },
-    //api-查询客户护理记录
-    listNurseRecordsVo(){
-      listNurseRecordsVo(this.conditionRecord).then(res=>{
-        this.nurseRecordList = res.data.records;
-        this.pageRecord.total = res.data.total; //总记录数
-        this.pageRecord.pageSize = res.data.size; //每页显示条数
-        this.pageRecord.currentPag = res.data.current; //当前页码
-        this.pageRecord.pagCount = res.data.pages; //总页数
-        
-      })
-    },
+    // api-查询客户信息列表 - 分页
+  getKhxxList() {
+    console.log('发送的 condition:', this.condition);
+    getKhxxList(this.condition).then(res => {
+      this.khxxList = res.data.records;
+      this.page.total = res.data.total;
+      this.page.pageSize = res.data.size;
+      this.page.currentPag = res.data.current;
+      this.page.pagCount = res.data.pages;
+    }).catch(err => {
+      console.error('请求失败:', err);
+    });
+  },
+  // api-查询客户护理记录
+  listNurseRecordsVo() {
+    listNurseRecordsVo(this.conditionRecord).then(res => {
+      this.nurseRecordList = res.data.records;
+      this.pageRecord.total = res.data.total;
+      this.pageRecord.pageSize = res.data.size;
+      this.pageRecord.currentPag = res.data.current;
+      this.pageRecord.pagCount = res.data.pages;
+    }).catch(err => {
+      console.error('请求失败:', err);
+    });
+  },
     del(id) {
       this.$confirm("确定删除?", "提示", {
         confirmButtonText: "确定",

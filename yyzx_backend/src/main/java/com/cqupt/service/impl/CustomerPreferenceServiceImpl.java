@@ -25,9 +25,22 @@ public class CustomerPreferenceServiceImpl extends ServiceImpl<CustomerPreferenc
 
     @Override
     public ResultVo<Page<CustomerPreferenceVo>> listCustomerPreferenceVoPage(CustomerPreferenceDTO customerPreferenceDTO) throws Exception {
-        Page<CustomerPreferenceVo> page = new Page<>(customerPreferenceDTO.getPageSize(), 6);
-        customerPreferenceMapper.selectCustomerPreferenceVo(page,customerPreferenceDTO.getCustomerName());
+        // 后端控制分页参数，设置默认值和范围
+        Integer current = customerPreferenceDTO.getCurrent() != null ? customerPreferenceDTO.getCurrent() : 1;
+        Integer pageSize = customerPreferenceDTO.getPageSize() != null ? customerPreferenceDTO.getPageSize() : 10;
+
+        // 校验参数范围，防止恶意请求
+        if (current < 1) {
+            current = 1;  // 最小为第 1 页
+        }
+        if (pageSize < 1 || pageSize > 100) {
+            pageSize = 10;  // 超出范围使用默认值 10
+        }
+
+        Page<CustomerPreferenceVo> page = new Page<>(current, pageSize);
+        customerPreferenceMapper.selectCustomerPreferenceVo(page, customerPreferenceDTO.getCustomerName());
         return ResultVo.ok(page);
+
     }
 
 }

@@ -17,6 +17,7 @@
     <sql id="Base_Column_List">
         id,remark, is_deleted,customer_id, retreattime, retreattype, retreatreason, auditstatus, auditperson, audittime
     </sql>
+    <!-- 通过当前登录护工查询对应客户信息-->
     <select id="selectBackdownVo" resultType="BackdownVo">
     SELECT distinct
         bdn.id,
@@ -42,6 +43,9 @@
         bdn.is_deleted=0
         <if test="userId != null and userId !=''">
             and cus.user_id=#{userId}
+        </if>
+        <if test="customerId != null">
+            and bdn.customer_id=#{customerId}
         </if>
     </where>
     </select>

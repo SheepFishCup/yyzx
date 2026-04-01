@@ -20,4 +20,33 @@
     <sql id="Base_Column_List">
         id, create_time, create_by, update_time, update_by, is_deleted, nickname, username, password, sex, email, role_id, phone_number
     </sql>
+    <!-- 分页查询用户（使用 XML 配置） -->
+    <select id="selectUserPage" resultType="com.cqupt.pojo.User">
+        SELECT
+        id,
+        create_time,
+        create_by,
+        update_time,
+        update_by,
+        is_deleted,
+        nickname,
+        username,
+        password,
+        sex,
+        email,
+        role_id,
+        phone_number,
+        status
+        FROM user
+        <where>
+            is_deleted = 0
+            <if test="nickName != null and nickName != ''">
+                AND nickname LIKE CONCAT('%', #{nickName}, '%')
+            </if>
+            <if test="roleId != null">
+                AND role_id = #{roleId}
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
 </mapper>

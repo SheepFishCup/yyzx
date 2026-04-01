@@ -37,8 +37,20 @@ public class OutwardServiceImpl extends ServiceImpl<OutwardMapper, Outward> impl
 
     @Override
     public ResultVo<Page<OutwardVo>> queryOutwardVo(OutwardDTO outwardDTO) throws Exception {
-        Page<OutwardVo> page = new Page<>(outwardDTO.getPageSize(),6);
-        outwardMapper.selectOutwardVo(page,outwardDTO.getUserId());
+        // 设置默认分页参数，避免 null
+        Integer current = outwardDTO.getCurrent() != null ? outwardDTO.getCurrent() : 1;
+        Integer pageSize = outwardDTO.getPageSize() != null ? outwardDTO.getPageSize() : 10;
+
+        // 参数范围校验，防止恶意请求
+        if (current < 1) {
+            current = 1;
+        }
+        if (pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+
+        Page<OutwardVo> page = new Page<>(current, pageSize);
+        outwardMapper.selectOutwardVo(page, outwardDTO.getUserId(), outwardDTO.getCustomerId());
         return ResultVo.ok(page);
     }
 

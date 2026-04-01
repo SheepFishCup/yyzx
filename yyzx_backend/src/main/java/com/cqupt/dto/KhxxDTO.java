@@ -27,6 +27,9 @@ public class KhxxDTO {
     @ApiModelProperty(value = "系统健康管家(护工)")
     private Long userId;
 
-    @ApiModelProperty(value = "页码")
+    @ApiModelProperty(value = "当前页", required = true, example = "1")
+    private Integer current;
+
+    @ApiModelProperty(value = "每页大小", required = true, example = "10")
     private Integer pageSize;
 }

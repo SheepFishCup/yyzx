@@ -71,17 +71,6 @@ public class AdminController {
         return userService.loginWithCaptcha(loginDTO);
     }
 
-    @PostMapping("/login")
-    @ApiOperation("用户登录接口")
-    @ApiImplicitParams({
-            @ApiImplicitParam(dataType = "String", name = "username", value = "用户登录账号", required = true),
-            @ApiImplicitParam(dataType = "String", name = "password", value = "用户登录密码", required = true)
-    })
-    public ResultVo<User> login(String username, String password) throws Exception {
-        log.info("用户登录接口，账号：{} 密码：{}", username, password);
-        return userService.login(username, password);
-    }
-
     @GetMapping("/findUserPage")
     public ResultVo<Page<User>> findUserPage(UserDTO userDTO) throws Exception {
         log.info("查询用户分页：{}", userDTO);

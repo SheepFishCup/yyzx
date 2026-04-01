@@ -17,8 +17,13 @@ import lombok.EqualsAndHashCode;
 public class CustomerPreferenceDTO {
     @ApiModelProperty(value = "喜好编号")
     private Long customerPreferenceId;
+
     @ApiModelProperty(value = "顾客姓名")
     private String customerName;
-    @ApiModelProperty(value = "页码")
+
+    @ApiModelProperty(value = "当前页", required = true, example = "1")
+    private Integer current;
+
+    @ApiModelProperty(value = "每页大小", required = true, example = "10")
     private Integer pageSize;
 }

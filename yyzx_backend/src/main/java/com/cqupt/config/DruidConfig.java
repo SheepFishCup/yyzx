@@ -1,5 +1,6 @@
 package com.cqupt.config;
 
+import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
@@ -10,8 +11,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 @Configuration
 public class DruidConfig {
@@ -24,10 +27,10 @@ public class DruidConfig {
         dataSource.setPassword("123456");
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
 
-        dataSource.setInitialSize(1);//初始化连接数
-        dataSource.setMinIdle(1);//最小连接数
-        dataSource.setMaxActive(8);//最大连接数
-        dataSource.setMaxWait(60000);//等待连接超时时间
+        dataSource.setInitialSize(5);//初始化连接数
+        dataSource.setMinIdle(10);//最小连接数
+        dataSource.setMaxActive(25);//最大连接数
+        dataSource.setMaxWait(3000);//等待连接超时时间
         dataSource.setTimeBetweenEvictionRunsMillis(60000);//配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
         dataSource.setPoolPreparedStatements(true);//配置是否缓存preparedStatement，也就是PSCache
         dataSource.setMinEvictableIdleTimeMillis(300000);//配置连接在池中的最小生存时间
@@ -36,6 +39,15 @@ public class DruidConfig {
         dataSource.setTestWhileIdle(true);//配置检测连接是否有效
         dataSource.setTestOnBorrow(false);//配置连接池中连接是否被使用前校验
         dataSource.setTestOnReturn(false);//配置连接池中连接是否被使用后校验
+
+        // 关键：手动添加 StatFilter 统计过滤器
+        StatFilter statFilter = new StatFilter();
+        statFilter.setMergeSql(true);
+        statFilter.setSlowSqlMillis(1000);
+        statFilter.setLogSlowSql(true);
+
+        // 将 StatFilter 添加到数据源
+        dataSource.getProxyFilters().add(statFilter);
 
         // 添加防止内存泄漏的关键配置
         dataSource.setRemoveAbandoned(true); // 删除泄露的连接
@@ -70,12 +82,12 @@ public class DruidConfig {
     public FilterRegistrationBean<WebStatFilter> webStatFilter() {
         FilterRegistrationBean<WebStatFilter> bean = new FilterRegistrationBean<>();
         bean.setFilter(new WebStatFilter());
-        
+
         Map<String, String> initParams = new HashMap<>();
         // 忽略资源
         initParams.put("exclusions", "*.js,*.css,*.jpg,*.png,*.ico,/druid/*");
         bean.setInitParameters(initParams);
-        
+
         bean.addUrlPatterns("/*");
         return bean;
     }

@@ -6,10 +6,13 @@ import com.cqupt.pojo.Customer;
 import com.cqupt.vo.KhxxCustomerVo;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 public interface CustomerMapper extends BaseMapper<Customer> {
 //    manType 1- 自理老人 2-代理老人 3-无管家
     Page<KhxxCustomerVo> selectPageVo(@Param("page") Page<KhxxCustomerVo> page,
                                       @Param("customerName") String customerName,
                                       @Param("manType") Integer manType,
                                       @Param("userId") Long userId);
+
 }

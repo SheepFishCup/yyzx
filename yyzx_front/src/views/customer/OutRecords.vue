@@ -359,59 +359,50 @@
         outwardList:[],
         khxxList: [],
         customerList:[],
-        //查询条件封装--客户
+         // 查询条件封装--客户
         condition: {
           customerName: "",
-          userId:"",
-          pageSize: "1" //默认第一页
+          userId: "",
+          current: 1,
+          pageSize: 6
         },
-        //查询条件封装--外出记录
+        // 查询条件封装--外出记录
         conditionRecord: {
-          userId:"",
-          pageSize: "1" //默认第一页
+          userId: "",
+          customerId: "",
+          current: 1,
+          pageSize: 6
         },
         
       };
     },
     methods: {
-      //点击查询
       query() {
-        //清空护理记录数据表
-        this.outwardList=[]
-        // this.conditionRecord.userId = "";
-  
-        this.condition.pageSize = "1"; //回到第一页
+        this.outwardList = []
+        this.condition.current = 1;
         this.getKhxxList();
         this.queryOutwardVo();
       },
-      //选中页码-客户
+      // 
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
+        this.condition.current = curPage;
         this.getKhxxList();
-        //清空护理记录数据表
-        this.outwardList=[]
-        this.conditionRecord.customerId = "";
+        this.outwardList = [];
       },
-     
-      //选中某客户行:获取用户的服务项目列表
       handleChangeCustomer(row) {
         if (row != null) {
-          //点击页码会清空row因此做出判断逻辑
-          //构建查询条件
-          this.conditionRecord.userId = row.userId;
-          //只有userid无法准确筛选，添加customerId准确筛选
+          this.pageRecord.currentPag = 1;
+          this.conditionRecord.current = 1;
           this.conditionRecord.customerId = row.id;
+          this.conditionRecord.userId = row.userId;
           this.queryOutwardVo();
         }
       },
-      //选中页码-外出记录
       handleRecordChange(curPage) {
         this.pageRecord.currentPag = curPage;
-        this.conditionRecord.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格:
-        this.listCustomerItem();
+        this.conditionRecord.current = curPage;
+        this.queryOutwardVo();
       },
       
       //api-查询客户信息列表-分页
@@ -426,20 +417,14 @@
         });
       },
       //api-查询外出申请记录
-      queryOutwardVo(){
-        queryOutwardVo(this.conditionRecord).then(res=>{
-          // 假设 conditionRecord.customerId 是当前选中客户的 ID
-          const customerId = this.conditionRecord.customerId;
+      queryOutwardVo() {
+        queryOutwardVo(this.conditionRecord).then(res => {
+          // 直接使用后端返回的过滤数据
           this.outwardList = res.data.records;
-          // 再次过滤，只保留属于当前客户的记录
-          if (customerId) {
-            this.outwardList = this.outwardList.filter(item => item.customerId === customerId);
-          }
-          this.pageRecord.total = res.data.total; //总记录数
-          this.pageRecord.pageSize = res.data.size; //每页显示条数
-          this.pageRecord.currentPag = res.data.current; //当前页码
-          this.pageRecord.pagCount = res.data.pages; //总页数
-          
+          this.pageRecord.total = res.data.total;
+          this.pageRecord.pageSize = res.data.size;
+          this.pageRecord.currentPag = res.data.current;
+          this.pageRecord.pagCount = res.data.pages;
         })
       },
       examine(id){

@@ -7,11 +7,29 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
+    url: jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 123456
+    druid:
+      # 基础配置
+      initial-size: 5
+      min-idle: 10
+      max-active: 25
+      max-wait: 3000
 
-# springfox swagger 不支持spring2.7以上的版本
+      # Druid 1.2.x 不需要配置 filters，统计功能默认启用
+      # 只需要配置慢 SQL 参数
+      filter:
+        stat:
+          enabled: true
+          db-type: mysql
+          log-slow-sql: true
+          slow-sql-millis: 2000
+          merge-sql: true
+
+      # 启用全局统计
+      use-global-data-source-stat: true
+  # springfox swagger 不支持spring2.7以上的版本
 # springfox使用的匹配路径默认是ant_path_matcher，但是spring2.7以上版本默认是path_matching
   # Redis配置
   redis:
@@ -46,6 +64,37 @@ spring:
           auth: true
           starttls:
             enable: true
+
+  # Quartz 定时任务配置（在 spring 下）
+  quartz:
+    job-store-type: memory
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: wantedScheduler
+            instanceId: AUTO
+          jobStore:
+            class: org.quartz.simpl.RAMJobStore
+            misfireThreshold: 60000
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 10
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true
+    # RabbitMQ 配置
+    rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+      virtual-host: /
+      listener:
+        simple:
+          acknowledge-mode: manual  # 手动确认模式
+          concurrency: 5  # 初始消费者数量
+          max-concurrency: 10  # 最大消费者数量
+          prefetch: 3  # 每次预取消息数量
 # mybatis-plus配置
 mybatis-plus:
   configuration:
@@ -64,6 +113,11 @@ yyzx:
     patient-secret: cqupt123456
     patient-expire: 7200000
     patient-header: token
+# 钉钉机器人配置
+dingtalk:
+  robot:
+    webhook: https://oapi.dingtalk.com/robot/send?access_token=9e59e5e0199a6fe35b0cb79ffa69f827e69dfbb3218ff785ef3fe6bbbe80f3b8
+    secret: SEC8d52022a764c07db2ba4915fa6fed7f723698f5b87f4d3a32402532614cabd57
 
 #  wechat:
 #    appid: ${yyzx.wechat.appid}

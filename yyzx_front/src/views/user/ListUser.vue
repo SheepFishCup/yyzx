@@ -7,7 +7,7 @@
               <el-col :span="7">
                 <el-input
                   placeholder="名称"
-                  v-model="queryParams.username"
+                  v-model="queryParams.nickName"
                   @clear="query"
                   clearable
                   size="large"
@@ -149,219 +149,207 @@
   </template>
   
   <script>
-  import {
-    addUser,
-    updateUser,
-    delUser,
-    findAllUser
-  } from "@/api/userApi.js";
-  import {getCurDate} from "@/utils/common.js"
-  import {getSessionStorage} from '@/utils/common.js'
-  import {queryOutwardVo} from "@/api/outwardApi.js";
-  export default {
-    computed: {
-      indexMethod() {
-        return this.page.currentPag * this.page.pageSize - this.page.pageSize + 1;
-      }
-    },
-    data() {
-      return {
-          //模态框数据
-          dialog: {
-            dialogVisible: false, //模态框状态
-            tops: "", //模态框标题,
-            item: {
-              id: "",
-              username: "",
-              nickname: "",
-              sex: "",
-              email: "",
-              phoneNumber: "",
-              isDeleted: "",//状态 1：启用；2：停用
-              createTime:"",
-              createBy:"",
-              password:"",
-              roleId:""
-            },
-            statusArr: [
-              {
-                value: 1,
-                label: "停用"
-              },
-              {
-                value: 2,
-                label: "启用"
-              }
-            ]
-          },
-        //校验规则
-        rules: {
-          username: [
-            { required: true, message: "请输入用户名", trigger: "blur" }
-          ], 
-          nickname: [
-            { required: true, message: "请输入真实姓名", trigger: "blur" }
-          ],
-          email: [
-            { required: true, message: "请输入邮箱", trigger: "blur" }
-          ],
-          isDeleted: [{ required: true, message: "请选择状态", trigger: "change" }]
+import {
+  addUser,
+  updateUser,
+  delUser,
+  getUserList  // ✅ 改为 getUserList
+} from "@/api/userApi.js";
+import {getCurDate} from "@/utils/common.js"
+import {getSessionStorage} from '@/utils/common.js'
+
+export default {
+  computed: {
+    indexMethod() {
+      return this.page.currentPag * this.page.pageSize - this.page.pageSize + 1;
+    }
+  },
+  data() {
+    return {
+      dialog: {
+        dialogVisible: false,
+        tops: "",
+        item: {
+          id: "",
+          username: "",
+          nickname: "",
+          sex: "",
+          email: "",
+          phoneNumber: "",
+          isDeleted: "",
+          createTime: "",
+          createBy: "",
+          password: "",
+          roleId: ""
         },
-        //分页属性封装
-        page: {
-          total: 0,
-          pageSize: 6,
-          currentPag: 1,
-          pagCount: 0
-        },
-        btnFlag: true,
-        queryParams: {
-          status: "1", //查询默认状态1 -启用
-          itemName: "",
-          pageSize: "1" //默认第一页
-        },
-        userList: []
-      };
-    },
-    mounted() {
+        statusArr: [
+          { value: 1, label: "停用" },
+          { value: 2, label: "启用" }
+        ]
+      },
+      rules: {
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" }
+        ],
+        nickname: [
+          { required: true, message: "请输入真实姓名", trigger: "blur" }
+        ],
+        email: [
+          { required: true, message: "请输入邮箱", trigger: "blur" }
+        ],
+        isDeleted: [
+          { required: true, message: "请选择状态", trigger: "change" }
+        ]
+      },
+      page: {
+        total: 0,
+        pageSize: 6,
+        currentPag: 1,
+        pagCount: 0
+      },
+      btnFlag: true,
+      queryParams: {
+        roleId: "",
+        nickName: "",
+        current: 1,
+        pageSize: 6
+      },
+      userList: []
+    };
+  },
+  mounted() {
+    this.getUserList();
+  },
+  methods: {
+    // 点击查询
+    query() {
+      this.queryParams.current = 1;
+      this.queryParams.pageSize = 6;
       this.getUserList();
-      
     },
-    methods: {
-      //点击查询
-      query() {
-        this.queryParams.pageSize = "1"; //回到第一页
-        this.getUserList();
-      },
-      //点击启用
-      enable() {
-        this.btnFlag = true;
-        this.queryParams.status = "1"; //1-启用
-        this.queryParams.pageSize = "1"; //回到第一页
-        this.getUserList();
-      },
-      //点击停用
-      disable() {
-        this.btnFlag = false;
-        this.queryParams.pageSize = "1"; //2-停用
-        this.queryParams.status = "2"; //0-生效床位信息
-        this.getUserList();
-      },
-      //选中页码
-      handleCurrentChange(curPage) {
-        this.page.currentPag = curPage;
-        this.queryParams.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
-        this.getUserList();
-      },
-      //点击修改
-      edit(row) {
-        this.dialog.tops = "修改用户";
-        this.dialog.dialogVisible = true;
-        //初始化模态框数据
-        this.$nextTick(() => {
-          this.dialog.item.id = row.id;
-          this.dialog.item.username = row.username;
-          this.dialog.item.nickname = row.nickname;
-          this.dialog.item.email = row.email;
-          this.dialog.item.sex = row.sex;
-          this.dialog.item.isDeleted = row.isDeleted;
-          this.dialog.item.phoneNumber = row.phoneNumber;
-          
-        });
-      },
-      //点击添加按钮
-      addItem() {
-        this.dialog.tops = "添加护理项目";
-        this.dialog.dialogVisible = true;
-      },
-      handleClose() {
-        this.dialog.dialogVisible = false;
-        this.resetForm("itemForm"); //重置表单
-      },
-      cancel() {
-        this.handleClose();
-      },
-      //重置表单
-      resetForm(formName) {
-        this.$refs[formName].resetFields();
-      },
-      //api-保存(新增/编辑)
-      save(formName) {
-        this.$refs[formName].validate(valid => {
-          if (valid) {
-            //通过id判断是添加还是编辑
-            if (this.dialog.item.id == null || this.dialog.item.id == "") {
-              this.dialog.item.createTime = getCurDate();
-              this.dialog.item.createBy = getSessionStorage("user").id;
-              this.dialog.item.password = "000000";
-              this.dialog.item.roleId = 2;
-              addUser(this.dialog.item).then(res => {
-                if (res.flag) {
-                  this.$message.success(res.message);
-                  //刷新数据表格(回到最初查询状态)
-                  this.queryParams.status = "1";
-                  this.queryParams.pageSize = "1"; //回到第一页
-                  this.queryParams.itemName = "";
-                  this.getUserList();
-                  this.handleClose(); //关闭模态框
-                } else {
-                  this.$message.error(res.message);
-                }
-              });
-            } else {
-              updateUser(this.dialog.item).then(res => {
-                if (res.flag) {
-                  this.$message.success(res.message);
-                  //刷新数据表格
-                  this.getUserList();
-                  this.handleClose(); //关闭模态框
-                } else {
-                  this.$message.error(res.message);
-                }
-              });
-            }
-          } else {
-            return false;
-          }
-        });
-      },
-      //api-删除
-      del(id) {
-        this.$confirm("此操作删除记录, 是否继续?", "提示", {
-          confirmButtonText: "确定",
-          cancelButtonText: "取消",
-          type: "warning"
-        })
-          .then(() => {
-            delUser({ id: id }).then(res => {
+    // 点击启用
+    enable() {
+      this.btnFlag = true;
+      this.queryParams.roleId = "";  // ✅ 改为 roleId
+      this.queryParams.current = 1;
+      this.queryParams.pageSize = 6;
+      this.getUserList();
+    },
+    // 点击停用
+    disable() {
+      this.btnFlag = false;
+      this.queryParams.roleId = "";  // ✅ 改为 roleId
+      this.queryParams.current = 1;
+      this.queryParams.pageSize = 6;
+      this.getUserList();
+    },
+    // 选中页码
+    handleCurrentChange(curPage) {
+      this.page.currentPag = curPage;
+      this.queryParams.current = curPage;
+      this.getUserList();
+    },
+    // 点击修改
+    edit(row) {
+      this.dialog.tops = "修改用户";
+      this.dialog.dialogVisible = true;
+      this.$nextTick(() => {
+        this.dialog.item.id = row.id;
+        this.dialog.item.username = row.username;
+        this.dialog.item.nickname = row.nickname;
+        this.dialog.item.email = row.email;
+        this.dialog.item.sex = row.sex;
+        this.dialog.item.isDeleted = row.isDeleted;
+        this.dialog.item.phoneNumber = row.phoneNumber;
+      });
+    },
+    // 点击添加按钮
+    addItem() {
+      this.dialog.tops = "添加用户";
+      this.dialog.dialogVisible = true;
+    },
+    handleClose() {
+      this.dialog.dialogVisible = false;
+      this.resetForm("itemForm");
+    },
+    cancel() {
+      this.handleClose();
+    },
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+    },
+    // api-保存 (新增/编辑)
+    save(formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          if (this.dialog.item.id == null || this.dialog.item.id == "") {
+            this.dialog.item.createTime = getCurDate();
+            this.dialog.item.createBy = getSessionStorage("user").id;
+            this.dialog.item.password = "000000";
+            this.dialog.item.roleId = 2;
+            addUser(this.dialog.item).then(res => {
               if (res.flag) {
                 this.$message.success(res.message);
-                //重载表格
+                this.queryParams.current = 1;
+                this.queryParams.pageSize = 6;
+                this.queryParams.nickName = "";
                 this.getUserList();
+                this.handleClose();
               } else {
                 this.$message.error(res.message);
               }
             });
-          })
-          .catch(() => {});
-      },
-      //api-查询护理项目(分页)
-      getUserList() {
-        findAllUser(this.queryParams).then(res => {
-          this.userList = res.data.records;
-          this.page.total = res.data.total; //总记录数
-          this.page.pageSize = res.data.size; //每页显示条数
-          this.page.currentPag = res.data.current; //当前页码
-          this.page.pagCount = res.data.pages; //总页数
-        });
-        // queryOutwardVo().then(res=>{
-        //     console.log(res);
-        // });
-      }
+          } else {
+            updateUser(this.dialog.item).then(res => {
+              if (res.flag) {
+                this.$message.success(res.message);
+                this.getUserList();
+                this.handleClose();
+              } else {
+                this.$message.error(res.message);
+              }
+            });
+          }
+        } else {
+          return false;
+        }
+      });
+    },
+    // api-删除
+    del(id) {
+      this.$confirm("此操作删除记录，是否继续？", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          delUser({ id: id }).then(res => {
+            if (res.flag) {
+              this.$message.success(res.message);
+              this.getUserList();
+            } else {
+              this.$message.error(res.message);
+            }
+          });
+        })
+        .catch(() => {});
+    },
+    // api-查询用户列表 (分页) ✅ 修复
+    getUserList() {
+      console.log('发送的 queryParams:', this.queryParams);
+      getUserList(this.queryParams).then(res => {  // ✅ 改为 getUserList
+        this.userList = res.data.records;
+        this.page.total = res.data.total;
+        this.page.pageSize = res.data.size;
+        this.page.currentPag = res.data.current;
+        this.page.pagCount = res.data.pages;
+      }).catch(err => {
+        console.error('请求失败:', err);
+      });
     }
-  };
-  </script>
+  }
+};
+</script>
   
   <style scoped >
   .activeBtn {

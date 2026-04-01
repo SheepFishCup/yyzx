@@ -1,0 +1,102 @@
+server:
+  port: 9999
+  servlet:
+    context-path: /yyzx
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    druid:
+      initial-size: 5
+      min-idle: 10
+      max-active: 25
+      max-wait: 3000
+      filter:
+        stat:
+          enabled: true
+          db-type: mysql
+          log-slow-sql: true
+          slow-sql-millis: 2000
+          merge-sql: true
+      use-global-data-source-stat: true
+
+  redis:
+    host: ${SPRING_REDIS_HOST}
+    port: 6379
+    database: 0
+    password:
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 5
+        max-wait: 3000ms
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 3
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 2855733759@qq.com
+    password: ppugcbdoifvdddch
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  quartz:
+    job-store-type: memory
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: wantedScheduler
+            instanceId: AUTO
+          jobStore:
+            class: org.quartz.simpl.RAMJobStore
+            misfireThreshold: 60000
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 10
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:/mapper/*.xml
+  type-aliases-package: com.cqupt.pojo,com.cqupt.vo,com.cqupt.dto
+
+yyzx:
+  jwt:
+    user-secret: cqupt123456
+    user-expire: 7200000
+    user-header: token
+    patient-secret: cqupt123456
+    patient-expire: 7200000
+    patient-header: token

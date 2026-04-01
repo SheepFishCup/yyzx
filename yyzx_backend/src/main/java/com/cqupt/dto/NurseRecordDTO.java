@@ -17,6 +17,10 @@ import lombok.EqualsAndHashCode;
 public class NurseRecordDTO {
     @ApiModelProperty(value = "客户编号")
     private Long customerId;
-    @ApiModelProperty(value = "页码")
+
+    @ApiModelProperty(value = "当前页", required = true, example = "1")
+    private Integer current;
+
+    @ApiModelProperty(value = "每页大小", required = true, example = "10")
     private Integer pageSize;
 }

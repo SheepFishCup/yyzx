@@ -35,7 +35,15 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
 
     @Override
     public ResultVo<Page<CustomerNurseItemVo>> listCustomerItem(CustomerNurseItemDTO customerNurseItemDTO) throws Exception {
-        Page<CustomerNurseItemVo> page = new Page<>(customerNurseItemDTO.getPageSize(), 6);
+        Integer current = customerNurseItemDTO.getCurrent()!= null ? customerNurseItemDTO.getCurrent() : 1;
+        Integer pageSize = customerNurseItemDTO.getPageSize() != null ? customerNurseItemDTO.getPageSize() : 10;
+        if (current<1){
+            current=1;
+        }
+        if (pageSize < 1 || pageSize > 100) {
+            pageSize = 10;
+        }
+        Page<CustomerNurseItemVo> page = new Page<>(current, pageSize);
         customerNurseItemMapper.selectCustomerItemVo(page,customerNurseItemDTO.getCustomerId());
         return ResultVo.ok(page);
     }
@@ -153,6 +161,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
         return ResultVo.ok("该用户未购买该护理项目");
     }
 
+    //移除
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo removeCustomerItem(Long id) throws Exception {

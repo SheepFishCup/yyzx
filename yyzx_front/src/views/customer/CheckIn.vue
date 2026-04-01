@@ -296,12 +296,13 @@ data() {
         }
       ]
     },
-    //查询条件
-    condition:{
-      customerName:"",
-      pageSize:"1",//默认第一页
-      manType:"1" //默认查询 1-自理老人 2-护理老人 3-历史老人
-    },
+    // 查询条件
+      condition: {
+        customerName: "",
+        current: 1,      // 改为 current，表示当前页
+        pageSize: 6,     // 新增 pageSize，表示每页条数
+        manType: "1"
+      },
     //分页属性封装
     page:{
       total:0,
@@ -450,7 +451,8 @@ methods: {
                 //1、刷新表格数据
                 //刷新数据表格(回到最初查询状态)
                 this.condition.manType="1";
-                this.condition.pageSize="1"; //回到第一页
+                // djsave 方法（新增后重置）
+                this.condition.current = 1;
                 this.condition.customerName=""
                 this.getKhxxList()
                 //2、关闭弹出层 
@@ -491,7 +493,8 @@ methods: {
     this.btnFlag2 = false;
     this.btnFlag3=false;
     this.condition.manType="1";
-    this.condition.pageSize="1"; //回到第一页
+    // selfCareMan 方法
+this.condition.current = 1;
     this.getKhxxList()
   },
   //护理老人
@@ -500,7 +503,8 @@ methods: {
     this.btnFlag2 = true;
     this.btnFlag3 = false;
     this.condition.manType="2";
-    this.condition.pageSize="1"; //回到第一页
+// careMan 方法
+this.condition.current = 1;
     this.getKhxxList()
   },
   //选择出生日期
@@ -516,12 +520,14 @@ methods: {
     this.btnFlag2 = false;
     this.btnFlag3 = true;
     this.condition.manType="3";
-    this.condition.pageSize="1"; //回到第一页
+// historyMan 方法
+this.condition.current = 1;
     this.getKhxxList()
   },
   //点击查询
   query(){
-    this.condition.pageSize="1"; //回到第一页
+// query 方法
+this.condition.current = 1;
     this.getKhxxList();
   },
   //点击删除 api-删除客户信息
@@ -546,11 +552,11 @@ methods: {
   },
   //选中页码
   handleCurrentChange(curPage){
-    this.page.currentPag=curPage
-    this.condition.pageSize= curPage //参数pageSize是服务端接收页码参数名
-    //重新渲染表格
-    this.getKhxxList();
-  },
+  this.page.currentPag = curPage
+  this.condition.current = curPage  // 改为赋值给 current
+  // this.condition.pageSize = curPage  // 删除这行
+  this.getKhxxList();
+},
   //api-查询房间列表
   getRoomList() {
     listRoom().then(res => {
@@ -587,14 +593,14 @@ methods: {
   },
   //api-查询客户信息列表-分页
   getKhxxList(){
-    getKhxxList(this.condition).then(res=>{
-      this.khxxList = res.data.records
-      this.page.total=res.data.total  //总记录数
-      this.page.pageSize=res.data.size //每页显示条数
-      this.page.currentPag=res.data.current //当前页码
-      this.page.pagCount=res.data.pages //总页数
-    })
-  }
+  getKhxxList(this.condition).then(res=>{
+    this.khxxList = res.data.records
+    this.page.total = res.data.total
+    this.page.pageSize = res.data.size
+    this.page.currentPag = res.data.current
+    this.page.pagCount = res.data.pages
+  })
+}
 },
 mounted() {
   //获取khxx

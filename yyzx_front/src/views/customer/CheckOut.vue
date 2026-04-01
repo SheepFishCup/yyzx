@@ -283,16 +283,18 @@
         backdownList:[],
         khxxList: [],
         customerList:[],
-        //查询条件封装--客户
+        // 查询条件封装--客户
         condition: {
           customerName: "",
-          userId:"",
-          pageSize: "1" //默认第一页
+          userId: "",
+          current: 1,      // 改为 current，表示当前页
+          pageSize: 6      // 新增 pageSize，表示每页条数
         },
-        //查询条件封装--退住记录
+        // 查询条件封装--退住记录
         conditionRecord: {
-          userId:"",
-          pageSize: "1" //默认第一页
+          userId: "",
+          current: 1,      // 改为 current，表示当前页
+          pageSize: 6      // 新增 pageSize，表示每页条数
         },
         
       };
@@ -300,41 +302,36 @@
     methods: {
       //点击查询
       query() {
-        //清空护理记录数据表
-        this.backdownList=[]
-        // this.conditionRecord.userId = "";
-  
-        this.condition.pageSize = "1"; //回到第一页
+        this.backdownList = []
+        this.condition.current = 1;  // 改为 current
         this.getKhxxList();
         this.queryBackdownVo();
       },
       //选中页码-客户
       handleCurrentChange(curPage) {
         this.page.currentPag = curPage;
-        this.condition.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
+        this.condition.current = curPage;  // 改为 current
         this.getKhxxList();
-        //清空护理记录数据表
-        this.backdownList=[]
-        this.conditionRecord.customerId = "";
+        this.backdownList = []
       },
      
       //选中某客户行:获取用户的服务项目列表
       handleChangeCustomer(row) {
         if (row != null) {
-          //点击页码会清空row因此做出判断逻辑
-          //构建查询条件
-          this.conditionRecord.userId = row.userId;
+          // 重置分页页码
+          this.pageRecord.currentPag = 1;
+          this.conditionRecord.current = 1;
+          // 构建查询条件
           this.conditionRecord.customerId = row.id;
+          this.conditionRecord.userId = row.userId;
           this.queryBackdownVo();
         }
       },
       //选中页码-护理记录
       handleRecordChange(curPage) {
         this.pageRecord.currentPag = curPage;
-        this.conditionRecord.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格:
-        this.listCustomerItem();
+        this.conditionRecord.current = curPage;  // 改为 current
+        this.queryBackdownVo();  // 注意：原代码调用的是 listCustomerItem()，但该方法不存在
       },
       
       //api-查询客户信息列表-分页

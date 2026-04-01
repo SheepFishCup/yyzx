@@ -80,14 +80,15 @@
         //分页属性封装
         page: {
           total: 0,
-          pageSize: 3,
+          pageSize: 6,
           currentPag: 1,
           pagCount: 0
         },
         queryParams: {
-          roleId: "2", //查询默认角色2 -健康管家
+          roleId: "2",
           nickname: "",
-          pageSize: "1" //默认第一页
+          current: 1,
+          pageSize: 6
         },
         userList: []
       };
@@ -98,24 +99,21 @@
     methods: {
       //点击查询
       query() {
-        this.queryParams.pageSize = "1"; //回到第一页
-        this.getUserList();
-      },
-      //选中页码
-      handleCurrentChange(curPage) {
-        this.page.currentPag = curPage;
-        this.queryParams.pageSize = curPage; //参数pageSize是服务端接收页码参数名
-        //重新渲染表格
-        this.getUserList();
-      },
-      //设置服务对象
-      userToCustomerService(row) {
-        //路由到设置服务对象
-        this.$router.push({
-          path: "/health/userToCustomerService",
-          query: { userId: row.id,nickName:row.nickname }
-        });
-      },
+      this.queryParams.current = 1;
+      this.queryParams.pageSize = 6;
+      this.getUserList();
+    },
+    handleCurrentChange(curPage) {
+      this.page.currentPag = curPage;
+      this.queryParams.current = curPage;
+      this.getUserList();
+    },
+    userToCustomerService(row) {
+      this.$router.push({
+        path: "/health/userToCustomerService",
+        query: { userId: row.id, nickName: row.nickname }
+      });
+    },
   
       // //api-删除
       // del(id) {
@@ -139,14 +137,17 @@
       // },
       //api-查询护理项目(分页)
       getUserList() {
-        getUserList(this.queryParams).then(res => {
-          this.userList = res.data.records;
-          this.page.total = res.data.total; //总记录数
-          this.page.pageSize = res.data.size; //每页显示条数
-          this.page.currentPag = res.data.current; //当前页码
-          this.page.pagCount = res.data.pages; //总页数
-        });
-      }
+      console.log('发送的 queryParams:', this.queryParams);
+      getUserList(this.queryParams).then(res => {
+        this.userList = res.data.records;
+        this.page.total = res.data.total;
+        this.page.pageSize = res.data.size;
+        this.page.currentPag = res.data.current;
+        this.page.pagCount = res.data.pages;
+      }).catch(err => {
+        console.error('请求失败:', err);
+      });
+    }
     }
   };
   </script>

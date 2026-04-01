@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableAsync // 开启异步
 @EnableCaching // 开启缓存
 @MapperScan("com.cqupt.mapper")
-@EnableScheduling
 public class YyzxBackendApplication {
 
     public static void main(String[] args) {

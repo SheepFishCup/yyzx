@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 public interface BackdownMapper extends BaseMapper<Backdown> {
     Page<BackdownVo> selectBackdownVo(@Param("page") Page<BackdownVo> page,
-                                      @Param("userId") Long userId
-                                      ) throws Exception;
+                                      @Param("userId") Long userId,
+                                      @Param("customerId") Long customerId
+                                    ) throws Exception;
 }

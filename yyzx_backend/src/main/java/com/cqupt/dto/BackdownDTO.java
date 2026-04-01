@@ -15,10 +15,15 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "BackdownDTO-退床条件", description = "")
 public class BackdownDTO {
-    @ApiModelProperty(value = "页码")
+    @ApiModelProperty(value = "当前页", required = true, example = "1")
+    private Integer current;
+
+    @ApiModelProperty(value = "每页大小", required = true, example = "10")
     private Integer pageSize;
 
     @ApiModelProperty(value = "用户编号")
     private Long userId;
 
+    @ApiModelProperty(value = "客户 ID")
+    private Long customerId;
 }

@@ -38,7 +38,7 @@ public class BusinessTask {
      * 每天凌晨 2 点执行
      * 清理过期的护理记录（假设只保留最近 1 年的数据）
      */
-    @Scheduled(cron = "0 0 2 * * ?")
+//    @Scheduled(cron = "0 0 2 * * ?")
     public void cleanExpiredNurseRecords() {
         log.info("开始清理过期护理记录...");
         try {
@@ -54,7 +54,7 @@ public class BusinessTask {
      * 每小时执行一次
      * 检查并处理待审批的退住申请
      */
-    @Scheduled(cron = "0 0 * * * ?")
+//    @Scheduled(cron = "0 0 * * * ?")
     public void processPendingBackdown() {
         log.info("开始处理待审批的退住申请...");
         try {
@@ -121,7 +121,7 @@ public class BusinessTask {
      * 每周一早上 8 点执行
      * 生成周报统计
      */
-    @Scheduled(cron = "0 0 8 ? * MON")
+//    @Scheduled(cron = "0 0 8 ? * MON")
     public void generateWeeklyReport() {
         log.info("开始生成周报统计...");
         try {

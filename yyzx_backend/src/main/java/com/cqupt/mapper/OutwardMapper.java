@@ -10,6 +10,8 @@ import org.apache.ibatis.annotations.Param;
 
 public interface OutwardMapper extends BaseMapper<Outward> {
     Page<OutwardVo> selectOutwardVo(@Param("page") Page<OutwardVo> page,
-                                    @Param("userId") Long userId) throws Exception;
+                                    @Param("userId") Long userId,
+                                    @Param("customerId") Long customerId
+                                    ) throws Exception;
 
 }

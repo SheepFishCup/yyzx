@@ -109,6 +109,7 @@
 <script>
 import { loginWithCaptcha, generateCaptcha, UserforgotPassword } from '../api/userApi.js'
 import { setSessionStorage } from '@/utils/common.js'
+import WebSocketClient from '@/utils/websocket.js'
 
 export default {
     data() {
@@ -147,6 +148,10 @@ export default {
     },
     mounted() {
         this.refreshCaptcha()
+    },
+    beforeDestroy() {
+        // 组件销毁时不断开 WebSocket，保持全局连接
+        // WebSocketClient.disconnect()
     },
     methods: {
         refreshCaptcha() {
@@ -197,9 +202,18 @@ export default {
 
             loginWithCaptcha(loginData).then(res => {
                 if (res.flag) {
+                    // 1. 保存登录信息
                     sessionStorage.setItem('token', res.message)
                     setSessionStorage('user', res.data)
                     this.$store.commit('addMenus', res.data.menuList)
+                    
+                    // 2. 获取 userId 并连接 WebSocket
+                    const userId = res.data.id || res.data.userId
+                    if (userId) {
+                        this.initWebSocket(userId)
+                    }
+                    
+                    // 3. 跳转首页
                     this.$router.push('/home')
                 } else {
                     this.$message.error(res.message)
@@ -212,6 +226,51 @@ export default {
             }).finally(() => {
                 this.loginLoading = false
             })
+        },
+        // 初始化 WebSocket 连接
+        initWebSocket(userId) {
+            // 连接 WebSocket
+            WebSocketClient.connect(userId)
+
+            // 设置消息回调
+            WebSocketClient.onMessage((message) => {
+                console.log('📨 收到 WebSocket 消息:', message)
+
+                // 解析消息内容（假设后端推送的是 JSON 格式）
+                try {
+                    const data = JSON.parse(message)
+                    // 根据消息类型处理不同业务逻辑
+                    if (data.type === 'welcome') {
+                        this.$message.success(data.content)
+                    } else if (data.type === 'notification') {
+                        // 处理通知消息
+                        this.$notify({
+                            title: data.title,
+                            message: data.content,
+                            type: data.level || 'info'
+                        })
+                    }
+                } catch (e) {
+                    // 非 JSON 格式直接显示
+                    this.$message.info(message)
+                }
+            })
+
+           // 设置通知回调（与 App.vue 保持一致）
+           WebSocketClient.onNotification((title, content, type) => {
+                console.log('🔔 收到通知:', title, content, type)
+                if (this.$notify) {
+                    this.$notify({
+                        title: title,
+                        message: content,
+                        type: type,
+                        duration: 3000,
+                        position: 'top-right'
+                    });
+                }
+            })
+
+            console.log('✅ WebSocket 初始化完成，userId:', userId)
         },
         showForgotPassword() {
             this.forgotPasswordDialogVisible = true
