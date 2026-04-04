@@ -15,7 +15,6 @@ import com.cqupt.config.RabbitMQConfig;
 import com.cqupt.context.BaseContext;
 import com.cqupt.dto.KhxxDTO;
 import com.cqupt.dto.LogMessage;
-import com.cqupt.dto.MailMessage;
 import com.cqupt.dto.NotifyMessage;
 import com.cqupt.mapper.BedDetailsMapper;
 import com.cqupt.mapper.BedMapper;

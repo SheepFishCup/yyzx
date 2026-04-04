@@ -7,6 +7,8 @@ package com.cqupt.config;
  */
 
 import com.cqupt.task.BackdownAutoApproveJob;
+import com.cqupt.task.DelayQueueProcessor;
+import com.cqupt.task.FailedMailRetryJob;
 import com.cqupt.task.GenerateWeeklyReportJob;
 import org.quartz.*;
 import org.springframework.context.annotation.Bean;
@@ -55,27 +57,69 @@ public class QuartzConfig {
     }
 
     @Bean
+    public JobDetail failedMailRetryJobDetail() {
+        return JobBuilder.newJob(FailedMailRetryJob.class)
+                .withIdentity("failedMailRetry", "mailJobs")
+                .withDescription("失败邮件自动重试")
+                .storeDurably()
+                .build();
+    }
+
+    @Bean
+    public Trigger failedMailRetryTrigger() {
+        CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("0 */5 * * * ?");
+        return TriggerBuilder.newTrigger()
+                .forJob(failedMailRetryJobDetail())
+                .withIdentity("failedMailRetryTrigger", "mailTriggers")
+                .withSchedule(scheduleBuilder)
+                .build();
+    }
+    @Bean
+    public JobDetail delayQueueProcessorJobDetail() {
+        return JobBuilder.newJob(DelayQueueProcessor.class)
+                .withIdentity("delayQueueProcessor", "delayJobs")
+                .withDescription("处理 Redis 延迟队列")
+                .storeDurably()
+                .build();
+    }
+
+    @Bean
+    public Trigger delayQueueProcessorTrigger() {
+        CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("0 */1 * * * ?");
+        return TriggerBuilder.newTrigger()
+                .forJob(delayQueueProcessorJobDetail())
+                .withIdentity("delayQueueProcessorTrigger", "delayTriggers")
+                .withSchedule(scheduleBuilder)
+                .build();
+    }
+
+    @Bean
     public Scheduler scheduler(JobDetail processPendingBackdownJobDetail,
                                Trigger processPendingBackdownTrigger,
                                JobDetail generateWeeklyReportJobDetail,
-                               Trigger generateWeeklyReportTrigger) throws SchedulerException {
+                               Trigger generateWeeklyReportTrigger,
+                               JobDetail failedMailRetryJobDetail,
+                               Trigger failedMailRetryTrigger,
+                               JobDetail delayQueueProcessorJobDetail,
+                               Trigger delayQueueProcessorTrigger) throws SchedulerException {
         SchedulerFactoryBean schedulerFactoryBean = new SchedulerFactoryBean();
-        // 注册 JobDetails
         schedulerFactoryBean.setJobDetails(
                 processPendingBackdownJobDetail,
-                generateWeeklyReportJobDetail
+                generateWeeklyReportJobDetail,
+                failedMailRetryJobDetail,
+                delayQueueProcessorJobDetail
         );
-        // 注册 Triggers
         schedulerFactoryBean.setTriggers(
                 processPendingBackdownTrigger,
-                generateWeeklyReportTrigger
+                generateWeeklyReportTrigger,
+                failedMailRetryTrigger,
+                delayQueueProcessorTrigger
         );
         schedulerFactoryBean.setAutoStartup(true);
         try {
             schedulerFactoryBean.afterPropertiesSet();
         } catch (Exception e) {
             throw new RuntimeException("Quartz Scheduler 初始化失败", e);
-
         }
 
         Scheduler scheduler = schedulerFactoryBean.getScheduler();

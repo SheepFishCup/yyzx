@@ -14,10 +14,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cqupt.constant.*;
 import com.cqupt.context.BaseContext;
-import com.cqupt.dto.ForgotPasswordDTO;
-import com.cqupt.dto.LoginWithCodeDTO;
-import com.cqupt.dto.ResetPasswordDTO;
-import com.cqupt.dto.UserDTO;
+import com.cqupt.dto.*;
 import com.cqupt.exception.AccountLockedException;
 import com.cqupt.exception.AccountNotFoundException;
 import com.cqupt.exception.BusinessException;
@@ -29,7 +26,9 @@ import com.cqupt.pojo.Menu;
 import com.cqupt.pojo.User;
 import com.cqupt.properties.JwtProperties;
 import com.cqupt.service.MailService;
+import com.cqupt.service.RabbitMQProducerService;
 import com.cqupt.service.UserService;
+import com.cqupt.utils.HybridBlacklistUtils;
 import com.cqupt.utils.JwtUtil;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.websocket.WebSocketServer;
@@ -65,9 +64,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private RedissonClient redissonClient;
     @Autowired
+    private HybridBlacklistUtils blacklistUtils;
+    @Autowired
     private TransactionTemplate transactionTemplate;
     @Autowired
     private MailService mailService;
+    @Autowired
+    private RabbitMQProducerService rabbitMQProducerService;  // ← 新增
+
     @Autowired
     private WebSocketServer webSocketServer;
 
@@ -266,13 +270,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo loginWithCaptcha(LoginWithCodeDTO loginDTO) {
-
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
         String captcha = loginDTO.getCaptcha();
         String uuid = loginDTO.getUuid();
 
-        // 1. 校验图片验证码
+        if (blacklistUtils.isInBlacklist(username)) {
+            log.warn("用户 {} 在黑名单中，拒绝登录", username);
+            return ResultVo.fail("该账号已被限制登录");
+        }
+
         String codeKey = RedisConstant.IMAGE_CODE_PREFIX + uuid;
         String savedCode = (String) redisTemplate.opsForValue().get(codeKey);
 
@@ -280,24 +287,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return ResultVo.fail("验证码已过期，请刷新");
         }
 
-        // 验证码比对（忽略大小写）
         if (!savedCode.equalsIgnoreCase(captcha)) {
-            // 验证失败也删除 Key，防止暴力破解
             redisTemplate.delete(codeKey);
             return ResultVo.fail("验证码错误");
         }
 
-        // 验证成功后立即删除验证码（防止重复使用）
         redisTemplate.delete(codeKey);
 
-        // 2. 检查登录错误次数限制（防止暴力破解）
         String errorKey = RedisConstant.LOGIN_ERROR_PREFIX + username;
         Integer errorCount = (Integer) redisTemplate.opsForValue().get(errorKey);
         if (errorCount != null && errorCount >= RedisConstant.LOGIN_ERROR_LIMIT) {
-            log.warn("用户 {} 登录错误次数过多，已被临时锁定", username);
-            // 设置锁定时间
+            log.warn("用户 {} 登录错误次数过多，已被锁定", username);
             redisTemplate.expire(errorKey, RedisConstant.LOGIN_ERROR_LOCK_MINUTES, TimeUnit.MINUTES);
-            return ResultVo.fail("登录错误次数过多，请1小时后再试");
+
+            blacklistUtils.addToBlacklist(username);
+            log.info("已将用户 {} 加入黑名单", username);
+
+            return ResultVo.fail("登录错误次数过多，请 1 小时后再试");
         }
 
         // 3. 原有的登录逻辑
@@ -453,17 +459,36 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 6. 构建重置链接（前端页面）
         String resetUrl = "http://localhost:8080/reset-password?token=" + token;
 
-        // 7. 发送邮件
+        // 7. ✅ 异步发送邮件（通过 RabbitMQ）
+        sendResetEmailAsync(user.getEmail(), user.getUsername(), resetUrl);
+
+        return ResultVo.ok("重置链接已发送到您的邮箱，请查收");
+    }
+    /**
+     * 异步发送重置密码邮件（通过 RabbitMQ）
+     */
+    private void sendResetEmailAsync(String email, String username, String resetUrl) {
         try {
-            mailService.sendPasswordResetEmail(user.getEmail(), resetUrl, user.getUsername());
-            log.info("密码重置邮件发送成功，用户：{}", user.getUsername());
-            return ResultVo.ok("重置链接已发送到您的邮箱，请查收");
+            // ✅ content 格式："username|resetUrl"
+            String content = username + "|" + resetUrl;
+
+            // 构建邮件消息
+            MailMessage mailMessage = MailMessage.builder()
+                    .to(email)
+                    .subject("【养老护理系统】密码重置")
+                    .content(content)
+                    .build();
+
+            // 发送到邮件队列
+            rabbitMQProducerService.sendMail(mailMessage);
+
+            log.info("已添加邮件发送任务到队列：email={}, username={}", email, username);
+
         } catch (Exception e) {
-            log.error("邮件发送失败", e);
-            return ResultVo.fail("邮件发送失败，请稍后重试");
+            log.error("添加邮件任务失败：email={}", email, e);
+            // 注意：这里不抛出异常，不影响主流程
         }
     }
-
     @Override
     public ResultVo resetPassword(ResetPasswordDTO resetDTO) {
         // 1. 校验新密码和确认密码是否一致

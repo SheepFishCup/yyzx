@@ -12,6 +12,7 @@ import com.cqupt.constant.RedisConstant;
 import com.cqupt.dto.*;
 import com.cqupt.pojo.User;
 import com.cqupt.service.UserService;
+import com.cqupt.utils.HybridBlacklistUtils;
 import com.cqupt.utils.ImageCodeUtil;
 import com.cqupt.utils.ResultVo;
 import io.swagger.annotations.Api;
@@ -19,6 +20,8 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +39,8 @@ import java.time.Duration;
 public class AdminController {
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private HybridBlacklistUtils blacklistUtils;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -130,5 +134,23 @@ public class AdminController {
     @GetMapping("/verifyResetToken")
     public ResultVo verifyResetToken(@RequestParam String token) {
         return userService.verifyResetToken(token);
+    }
+
+    @PostMapping("/unblock")
+    public ResultVo unblockUser(@RequestParam String username) {
+        try {
+            boolean removed = blacklistUtils.removeFromBlacklist(username);
+
+            if (removed) {
+                log.info("✅ 已成功解封用户：{}", username);
+                return ResultVo.ok("解封成功");
+            } else {
+                log.warn("⚠️ 用户 {} 不在黑名单中", username);
+                return ResultVo.fail("该用户不在黑名单中");
+            }
+        } catch (Exception e) {
+            log.error("❌ 解封用户失败：{}", username, e);
+            return ResultVo.fail("解封失败：" + e.getMessage());
+        }
     }
 }
