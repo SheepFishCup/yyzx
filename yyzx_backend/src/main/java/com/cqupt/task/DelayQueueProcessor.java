@@ -47,10 +47,7 @@ public class DelayQueueProcessor extends QuartzJobBean {
 
             for (String task : tasks) {
                 try {
-                    // TODO: 解析任务数据并执行
-                    // Map<String, Object> taskData = objectMapper.readValue(task, Map.class);
-                    // mailService.sendEmail(...);
-                    
+
                     // 移除已处理的任务
                     delayQueueUtils.removeTask(queueName, task);
                     log.info("✅ 延迟邮件任务处理完成：{}", task);

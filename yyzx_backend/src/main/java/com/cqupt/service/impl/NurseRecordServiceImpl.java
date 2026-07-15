@@ -21,13 +21,19 @@ import com.cqupt.pojo.NurseRecord;
 import com.cqupt.service.NurseRecordService;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.NurseRecordsVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+
+
+@Slf4j
 @Service
 public class NurseRecordServiceImpl extends ServiceImpl<NurseRecordMapper, NurseRecord> implements NurseRecordService {
 
@@ -35,12 +41,17 @@ public class NurseRecordServiceImpl extends ServiceImpl<NurseRecordMapper, Nurse
     private NurseRecordMapper nurseRecordMapper;
     @Autowired
     private CustomerNurseItemMapper customerNurseItemMapper;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo addNurseRecord(NurseRecord nurserecord) throws Exception {
+        String stockKey = "nurse:item:stock:" + nurserecord.getCustomerId() + ":" + nurserecord.getItemId();
+        Integer nursingCount = nurserecord.getNursingCount();
+        Long result = null;
+
         try {
-            // 查询当前用户的护理项目余量
             LambdaQueryWrapper<CustomerNurseItem> lqw = new LambdaQueryWrapper<>();
             lqw.eq(CustomerNurseItem::getCustomerId, nurserecord.getCustomerId())
                     .eq(CustomerNurseItem::getItemId, nurserecord.getItemId());
@@ -49,26 +60,63 @@ public class NurseRecordServiceImpl extends ServiceImpl<NurseRecordMapper, Nurse
             if (customernurseitem == null) {
                 throw new BusinessException(MessageConstant.NURSEITEM_NOT_FOUND);
             }
-            if (customernurseitem.getNurseNumber() < nurserecord.getNursingCount()){//剩余数量不足
+
+            try {
+                stringRedisTemplate.opsForValue().setIfAbsent(stockKey, String.valueOf(customernurseitem.getNurseNumber()));
+
+                String luaScript =
+                        "local stock = redis.call('GET', KEYS[1]) " +
+                                "if stock == false then " +
+                                "    return -1 " +
+                                "end " +
+                                "local stockNum = tonumber(stock) " +
+                                "local needNum = tonumber(ARGV[1]) " +
+                                "if stockNum < needNum then " +
+                                "    return 0 " +
+                                "end " +
+                                "redis.call('DECRBY', KEYS[1], needNum) " +
+                                "return 1";
+
+                result = stringRedisTemplate.execute(
+                        new DefaultRedisScript<>(luaScript, Long.class),
+                        Collections.singletonList(stockKey),
+                        String.valueOf(nursingCount)
+                );
+            } catch (Exception redisEx) {
+                log.warn("Redis不可用，降级为数据库乐观锁，itemId: {}", nurserecord.getItemId(), redisEx);
+                result = 1L;
+            }
+
+            if (result == null || result == -1) {
+                throw new BusinessException("护理项目库存未配置，请联系管理员");
+            }
+
+            if (result == 0) {
                 throw new NurseitemException(MessageConstant.NUMBER_ERROR);
             }
-            // 修改用户护理项目数量
+
             LambdaUpdateWrapper<CustomerNurseItem> luw = new LambdaUpdateWrapper<>();
             luw.eq(CustomerNurseItem::getCustomerId, nurserecord.getCustomerId())
                     .eq(CustomerNurseItem::getItemId, nurserecord.getItemId())
-                    .set(CustomerNurseItem::getNurseNumber, customernurseitem.getNurseNumber() - nurserecord.getNursingCount());
+                    .ge(CustomerNurseItem::getNurseNumber, nursingCount)
+                    .setSql("nurse_number = nurse_number - " + nursingCount);
+
             int count = customerNurseItemMapper.update(null, luw);
-
-            // 生成护理记录
-            nurserecord.setIsDeleted(0);
-            boolean temp = save(nurserecord);
-
-            if (!(count > 0 && temp)) {
-                throw new Exception("护理记录生成失败");
+            if (count == 0) {
+                throw new NurseitemException(MessageConstant.NUMBER_ERROR);
             }
+            nurserecord.setIsDeleted(0);
+            save(nurserecord);
 
             return ResultVo.ok("护理记录生成成功");
         } catch (Exception e) {
+            if (result != null && result == 1) {
+                try {
+                    stringRedisTemplate.opsForValue().increment(stockKey, nursingCount);
+                } catch (Exception rollbackEx) {
+                    log.error("Redis库存回滚失败（可能Redis宕机），key: {}, count: {}", stockKey, nursingCount, rollbackEx);
+                }
+            }
             throw new Exception("操作失败：" + e.getMessage());
         }
     }

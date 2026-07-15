@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL 数据库服务
   mysql:
@@ -28,22 +26,92 @@ services:
     restart: always
 
   # Redis 缓存服务
-  redis:
+  redis-master:
     image: redis:7-alpine
-    container_name: yyzx_redis
+    container_name: yyzx_redis_master
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - redis_master_data:/data
+    command: redis-server --port 6379 --requirepass yourpassword --appendonly yes
     networks:
       - yyzx_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "-a", "yourpassword", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 3
     restart: always
+    
+  redis-slave1:
+    image: redis:7-alpine
+    container_name: yyzx_redis_slave1
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_slave1_data:/data
+    command: redis-server --port 6379 --slaveof redis-master 6379 --masterauth yourpassword --requirepass yourpassword --appendonly yes
+    depends_on:
+      - redis-master
+    networks:
+      - yyzx_network
+    restart: always
+
+  redis-slave2:
+    image: redis:7-alpine
+    container_name: yyzx_redis_slave2
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_slave2_data:/data
+    command: redis-server --port 6379 --slaveof redis-master 6379 --masterauth yourpassword --requirepass yourpassword --appendonly yes
+    depends_on:
+      - redis-master
+    networks:
+      - yyzx_network
+    restart: always
+
+  redis-sentinel1:
+    image: redis:7-alpine
+    container_name: yyzx_redis_sentinel1
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+    networks:
+      - yyzx_network
+    restart: always
+
+  redis-sentinel2:
+    image: redis:7-alpine
+    container_name: yyzx_redis_sentinel2
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+    networks:
+      - yyzx_network
+    restart: always
+
+  redis-sentinel3:
+    image: redis:7-alpine
+    container_name: yyzx_redis_sentinel3
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+    networks:
+      - yyzx_network
+    restart: always  
 
   # RabbitMQ 消息队列服务
   rabbitmq:
@@ -75,18 +143,20 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      redis-sentinel1:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
     ports:
       - "9999:9999"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 123456
-      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_SENTINEL_MASTER: mymaster
+      SPRING_REDIS_SENTINEL_NODES: redis-sentinel1:26379,redis-sentinel2:26379,redis-sentinel3:26379
+      SPRING_REDIS_PASSWORD: yourpassword
       SPRING_RABBITMQ_HOST: rabbitmq
       JAVA_OPTS: "-Xms512m -Xmx1024m -Duser.timezone=GMT+8"
     volumes:
@@ -97,7 +167,9 @@ services:
 
 volumes:
   mysql_data:
-  redis_data:
+  redis_master_data:
+  redis_slave1_data:
+  redis_slave2_data:
   rabbitmq_data:
 
 networks:

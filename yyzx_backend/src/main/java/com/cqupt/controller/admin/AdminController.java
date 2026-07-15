@@ -23,11 +23,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Slf4j
@@ -43,24 +45,47 @@ public class AdminController {
     private HybridBlacklistUtils blacklistUtils;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    private static final ConcurrentHashMap<String, CacheEntry> LOCAL_CACHE = new ConcurrentHashMap<>();
+    private static final long CACHE_EXPIRE_MILLIS = 300000;
+
+    private static class CacheEntry {
+        Object value;
+        long expireTime;
+
+        CacheEntry(Object value, long ttlMillis) {
+            this.value = value;
+            this.expireTime = System.currentTimeMillis() + ttlMillis;
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() > expireTime;
+        }
+    }
+
+    private void putToLocalCache(String key, Object value, long ttlMillis) {
+        LOCAL_CACHE.put(key, new CacheEntry(value, ttlMillis));
+    }
 
     @GetMapping("/generate")
     @ApiOperation("生成图片验证码")
     public ResultVo<ImageCodeDTO> generateCaptcha() {
         try {
-            // 生成验证码
             ImageCodeDTO imageCodeDTO = ImageCodeUtil.generateCode();
-            // 将验证码存入 Redis（5 分钟有效期）
             String key = RedisConstant.IMAGE_CODE_PREFIX + imageCodeDTO.getUuid();
             String code = imageCodeDTO.getCode();
             log.info("生成验证码 - UUID: {}, 验证码文本：{}", imageCodeDTO.getUuid(), code);
-            redisTemplate.opsForValue().set(key, code,
-                    Duration.ofSeconds(RedisConstant.IMAGE_CODE_EXPIRE));
-            // 验证是否存入成功
-            String savedValue = (String) redisTemplate.opsForValue().get(key);
-            log.info("Redis 存储验证 - Key: {}, 读取结果：{}", key, savedValue);
-            // 清除验证码文本（生产环境）
-            // imageCodeDTO.setCode(null);
+
+            try {
+                redisTemplate.opsForValue().set(key, code,
+                        Duration.ofSeconds(RedisConstant.IMAGE_CODE_EXPIRE));
+                String savedValue = (String) redisTemplate.opsForValue().get(key);
+                log.info("Redis 存储验证 - Key: {}, 读取结果：{}", key, savedValue);
+            } catch (RedisConnectionFailureException e) {
+                log.error("Redis 连接失败，使用本地缓存存储验证码", e);
+            }
+
+            putToLocalCache(key, code, RedisConstant.IMAGE_CODE_EXPIRE * 1000L);
+
             return ResultVo.ok(imageCodeDTO);
         } catch (Exception e) {
             log.error("生成验证码失败", e);

@@ -27,15 +27,21 @@ public class RedisDelayQueueUtils {
     @SuppressWarnings("unchecked")
     public List<String> getDueTasks(String queueName, long limit) {
         long now = System.currentTimeMillis();
-        Set<Object> objects = redisTemplate.opsForZSet()
-                .rangeByScore(queueName, 0, now, 0, limit);
+
+        Set<byte[]> byteObjects = redisTemplate.execute(connection -> {
+            return connection.zRangeByScore(
+                    queueName.getBytes(),
+                    Double.MIN_VALUE,
+                    (double) now,
+                    0,
+                    limit
+            );
+        }, true);
 
         List<String> tasks = new ArrayList<>();
-        if (objects != null) {
-            for (Object obj : objects) {
-                if (obj instanceof String) {
-                    tasks.add((String) obj);
-                }
+        if (byteObjects != null) {
+            for (byte[] bytes : byteObjects) {
+                tasks.add(new String(bytes));
             }
         }
         return tasks;
@@ -47,19 +53,21 @@ public class RedisDelayQueueUtils {
 
     public Long getPendingCount(String queueName) {
         long now = System.currentTimeMillis();
-        return redisTemplate.opsForZSet().count(queueName, 0, now);
-    }
+        return redisTemplate.execute(connection ->
+                        connection.zCount(queueName.getBytes(), 0, (double) now)
+                , true);    }
 
     @SuppressWarnings("unchecked")
     public long getNextTaskDelay(String queueName) {
-        Set<ZSetOperations.TypedTuple<Object>> tuples = redisTemplate.opsForZSet()
-                .rangeWithScores(queueName, 0, 0);
+        Set<org.springframework.data.redis.connection.RedisZSetCommands.Tuple> tuples = redisTemplate.execute(connection ->
+                        connection.zRangeWithScores(queueName.getBytes(), 0, 0)
+                , true);
 
         if (tuples == null || tuples.isEmpty()) {
             return -1;
         }
 
-        ZSetOperations.TypedTuple<Object> first = tuples.iterator().next();
+        org.springframework.data.redis.connection.RedisZSetCommands.Tuple first = tuples.iterator().next();
         if (first != null && first.getScore() != null) {
             return first.getScore().longValue() - System.currentTimeMillis();
         }

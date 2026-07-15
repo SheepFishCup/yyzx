@@ -37,6 +37,7 @@ import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ import java.nio.file.AccessDeniedException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -77,18 +79,69 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final ConcurrentHashMap<String, Object> LOCAL_CACHE = new ConcurrentHashMap<>();
+    private static final boolean REDIS_FALLBACK_ENABLED = true;
+    private static final long CACHE_EXPIRE_MILLIS = 300000;
 
-    // 记录登录错误
-    private void recordLoginError(String username) {
-        String key = RedisConstant.LOGIN_ERROR_PREFIX + username;
-        Long count = redisTemplate.opsForValue().increment(key);
-        if (count == 1) {
-            redisTemplate.expire(key, Duration.ofHours(1)); // 1小时内有效
+    private static class CacheEntry {
+        Object value;
+        long expireTime;
+
+        CacheEntry(Object value, long ttlMillis) {
+            this.value = value;
+            this.expireTime = System.currentTimeMillis() + ttlMillis;
         }
 
-        // 超过5次，锁定账号
-        if (count >= 5) {
-            lockAccount(username);
+        boolean isExpired() {
+            return System.currentTimeMillis() > expireTime;
+        }
+    }
+
+    private void putToLocalCache(String key, Object value, long ttlMillis) {
+        if (REDIS_FALLBACK_ENABLED) {
+            LOCAL_CACHE.put(key, new CacheEntry(value, ttlMillis));
+        }
+    }
+
+    private Object getFromLocalCache(String key) {
+        if (!REDIS_FALLBACK_ENABLED) {
+            return null;
+        }
+        CacheEntry entry = (CacheEntry) LOCAL_CACHE.get(key);
+        if (entry == null || entry.isExpired()) {
+            LOCAL_CACHE.remove(key);
+            return null;
+        }
+        return entry.value;
+    }
+
+    private void removeFromLocalCache(String key) {
+        if (REDIS_FALLBACK_ENABLED) {
+            LOCAL_CACHE.remove(key);
+        }
+    }
+    // 记录登录错误（带降级）
+    private void recordLoginError(String username) {
+        String key = RedisConstant.LOGIN_ERROR_PREFIX + username;
+        try {
+            Long count = redisTemplate.opsForValue().increment(key);
+            if (count == 1) {
+                redisTemplate.expire(key, Duration.ofHours(1));
+            }
+            if (count >= 5) {
+                lockAccount(username);
+            }
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存记录错误次数", e);
+            Integer count = (Integer) getFromLocalCache(key);
+            if (count == null) {
+                count = 0;
+            }
+            count++;
+            putToLocalCache(key, count, Duration.ofHours(1).toMillis());
+            if (count >= 5) {
+                lockAccount(username);
+            }
         }
     }
     // 锁定账号
@@ -149,67 +202,77 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo addUser(User user) throws Exception {
-        // 创建锁对象
         String lockKey = RedisConstant.USER_ADD_LOCK_PREFIX + user.getUsername();
-        RLock lock = redissonClient.getLock(lockKey);
+        RLock lock = null;
 
-        // 尝试获取锁，使用看门狗模式（自动续期）
-        boolean isLocked = lock.tryLock(0, -1, TimeUnit.SECONDS);
-        if (!isLocked) {
-            log.warn("获取分布式锁失败，用户名：{}", user.getUsername());
-            return ResultVo.fail("系统繁忙，请稍后再试");
-        }
         try {
-            // 在锁保护下执行事务操作
-            return transactionTemplate.execute(status -> {
-                try {
-                    // 校验用户名是否已存在
-                    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-                    queryWrapper.eq("username", user.getUsername());
-                    if (count(queryWrapper) > 0) {
-                        status.setRollbackOnly();
-                        throw new BusinessException("用户名已存在");
-                    }
+            lock = redissonClient.getLock(lockKey);
+            boolean isLocked = lock.tryLock(0, -1, TimeUnit.SECONDS);
+            if (!isLocked) {
+                log.warn("获取分布式锁失败，用户名：{}", user.getUsername());
+                return ResultVo.fail("系统繁忙，请稍后再试");
+            }
 
-                    // 校验手机号是否已存在
-                    queryWrapper = new QueryWrapper<>();
-                    queryWrapper.eq("phone_number", user.getPhoneNumber());
-                    if (count(queryWrapper) > 0) {
-                        status.setRollbackOnly();
-                        throw new BusinessException("手机号已存在");
-                    }
+            return executeAddUser(user);
 
-                    // 校验邮箱是否已存在
-                    queryWrapper = new QueryWrapper<>();
-                    queryWrapper.eq("email", user.getEmail());
-                    if (count(queryWrapper) > 0) {
-                        status.setRollbackOnly();
-                        throw new BusinessException("邮箱已存在");
-                    }
-                    // 插入用户
-                    user.setIsDeleted(0);
-                    user.setStatus(StatusConstant.ENABLE);
-                    user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-                    int row = userMapper.insert(user);
-                    if (row <= 0) {
-                        status.setRollbackOnly();// 设置回滚
-                        throw new BusinessException("添加失败");
-                    }
-                    return ResultVo.ok("添加成功");
-                } catch (BusinessException e) {
-                    throw e;
-                } catch (Exception e) {
-                    status.setRollbackOnly();
-                    throw new BusinessException("添加失败：" + e.getMessage());
-                }
-            });
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地锁降级", e);
+            synchronized (this) {
+                return executeAddUser(user);
+            }
         } finally {
-            // 释放锁（只有当前线程持有锁时才释放）
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
+            if (lock != null && lock.isHeldByCurrentThread()) {
+                try {
+                    lock.unlock();
+                } catch (Exception e) {
+                    log.error("释放锁失败", e);
+                }
             }
         }
+    }
+
+    private ResultVo executeAddUser(User user) {
+        // 检查用户名、手机号、邮箱是否已存在
+        return transactionTemplate.execute(status -> {
+            try {
+                QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("username", user.getUsername());
+                if (count(queryWrapper) > 0) {
+                    status.setRollbackOnly();
+                    throw new BusinessException("用户名已存在");
+                }
+
+                queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("phone_number", user.getPhoneNumber());
+                if (count(queryWrapper) > 0) {
+                    status.setRollbackOnly();
+                    throw new BusinessException("手机号已存在");
+                }
+
+                queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("email", user.getEmail());
+                if (count(queryWrapper) > 0) {
+                    status.setRollbackOnly();
+                    throw new BusinessException("邮箱已存在");
+                }
+
+                user.setIsDeleted(0);
+                user.setStatus(StatusConstant.ENABLE);
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+                int row = userMapper.insert(user);
+                if (row <= 0) {
+                    status.setRollbackOnly();
+                    throw new BusinessException("添加失败");
+                }
+                return ResultVo.ok("添加成功");
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                status.setRollbackOnly();
+                throw new BusinessException("添加失败：" + e.getMessage());
+            }
+        });
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -275,34 +338,73 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String captcha = loginDTO.getCaptcha();
         String uuid = loginDTO.getUuid();
 
-        if (blacklistUtils.isInBlacklist(username)) {
-            log.warn("用户 {} 在黑名单中，拒绝登录", username);
-            return ResultVo.fail("该账号已被限制登录");
+        // 黑名单检查（带降级）
+        try {
+            if (blacklistUtils.isInBlacklist(username)) {
+                log.warn("用户 {} 在黑名单中，拒绝登录", username);
+                return ResultVo.fail("该账号已被限制登录");
+            }
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，跳过黑名单检查", e);
         }
 
         String codeKey = RedisConstant.IMAGE_CODE_PREFIX + uuid;
-        String savedCode = (String) redisTemplate.opsForValue().get(codeKey);
+        String savedCode = null;
+        boolean fromRedis = true;
 
+        try {
+            savedCode = (String) redisTemplate.opsForValue().get(codeKey);
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存验证验证码", e);
+            fromRedis = false;
+            savedCode = (String) getFromLocalCache(codeKey);
+        }
         if (savedCode == null) {
             return ResultVo.fail("验证码已过期，请刷新");
         }
 
         if (!savedCode.equalsIgnoreCase(captcha)) {
-            redisTemplate.delete(codeKey);
+            if (fromRedis) {
+                try {
+                    redisTemplate.delete(codeKey);
+                } catch (Exception e) {
+                    log.error("删除验证码失败", e);
+                }
+            } else {
+                removeFromLocalCache(codeKey);
+            }
             return ResultVo.fail("验证码错误");
         }
 
-        redisTemplate.delete(codeKey);
+        if (fromRedis) {
+            try {
+                redisTemplate.delete(codeKey);
+            } catch (Exception e) {
+                log.error("删除验证码失败", e);
+            }
+        } else {
+            removeFromLocalCache(codeKey);
+        }
 
+        // 错误次数检查（带降级）
         String errorKey = RedisConstant.LOGIN_ERROR_PREFIX + username;
-        Integer errorCount = (Integer) redisTemplate.opsForValue().get(errorKey);
+        Integer errorCount = null;
+        try {
+            errorCount = (Integer) redisTemplate.opsForValue().get(errorKey);
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，跳过错误次数检查", e);
+            errorCount = (Integer) LOCAL_CACHE.get(errorKey);
+        }
         if (errorCount != null && errorCount >= RedisConstant.LOGIN_ERROR_LIMIT) {
+            try {
+                if (fromRedis) {
+                    redisTemplate.expire(errorKey, RedisConstant.LOGIN_ERROR_LOCK_MINUTES, TimeUnit.MINUTES);
+                    blacklistUtils.addToBlacklist(username);
+                }
+            } catch (Exception e) {
+                log.error("锁定账户失败", e);
+            }
             log.warn("用户 {} 登录错误次数过多，已被锁定", username);
-            redisTemplate.expire(errorKey, RedisConstant.LOGIN_ERROR_LOCK_MINUTES, TimeUnit.MINUTES);
-
-            blacklistUtils.addToBlacklist(username);
-            log.info("已将用户 {} 加入黑名单", username);
-
             return ResultVo.fail("登录错误次数过多，请 1 小时后再试");
         }
 
@@ -317,8 +419,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            // 记录错误次数
-            recordLoginError(username);
+            try {
+                recordLoginError(username);
+            } catch (Exception e) {
+                log.error("记录登录错误失败", e);
+            }
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
@@ -330,7 +435,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 4. 登录成功，清除错误记录
-        redisTemplate.delete(errorKey);
+        try {
+            redisTemplate.delete(errorKey);
+        } catch (Exception e) {
+            LOCAL_CACHE.remove(errorKey);
+        }
 
         // 5. 获取菜单
         if (user.getRoleId() != null) {
@@ -347,10 +456,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 jwtProperties.getUserExpire(),
                 claims);
 
-        // 将 token 和用户信息存入 Redis
-        String tokenKey = RedisConstant.USER_TOKEN_PREFIX + user.getId();
-        redisTemplate.opsForValue().set(tokenKey, token, Duration.ofSeconds(RedisConstant.TOKEN_EXPIRE_SECONDS));
-
+        // 将 token 存入 Redis（失败时使用 JWT 自包含方案）
+        try {
+            String tokenKey = RedisConstant.USER_TOKEN_PREFIX + user.getId();
+            redisTemplate.opsForValue().set(tokenKey, token, Duration.ofSeconds(RedisConstant.TOKEN_EXPIRE_SECONDS));
+        } catch (RedisConnectionFailureException e) {
+            log.warn("Redis 不可用，使用无状态 JWT 模式", e);
+        }
         // 发送登录通知
         // 发送WebSocket通知
         Map<String, Object> message = new HashMap<>();
@@ -389,11 +501,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public ResultVo forgotPassword(ForgotPasswordDTO forgotDTO) {
         String email = forgotDTO.getEmail();
 
-        // 1. 校验图片验证码
         String codeKey = RedisConstant.IMAGE_CODE_PREFIX + forgotDTO.getUuid();
-        Object savedCodeObj = redisTemplate.opsForValue().get(codeKey);
-        String savedCode = savedCodeObj != null ? savedCodeObj.toString() : null;
+        String savedCode = null;
+        boolean fromRedis = true;
 
+        try {
+            Object savedCodeObj = redisTemplate.opsForValue().get(codeKey);
+            savedCode = savedCodeObj != null ? savedCodeObj.toString() : null;
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存验证验证码", e);
+            fromRedis = false;
+            Object cachedCode = getFromLocalCache(codeKey);
+            savedCode = cachedCode != null ? cachedCode.toString() : null;
+        }
 
         if (savedCode == null) {
             return ResultVo.fail("验证码已过期，请刷新");
@@ -403,10 +523,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return ResultVo.fail("验证码错误");
         }
 
-        // 验证成功后删除验证码
-        redisTemplate.delete(codeKey);
+        if (fromRedis) {
+            try {
+                redisTemplate.delete(codeKey);
+            } catch (Exception e) {
+                log.error("删除验证码失败", e);
+            }
+        } else {
+            removeFromLocalCache(codeKey);
+        }
 
-        // 2. 根据邮箱查询用户
         QueryWrapper<User> qw = new QueryWrapper<>();
         qw.eq("email", email);
         qw.eq("is_deleted", 0);
@@ -422,44 +548,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = userList.get(0);
-        if (user == null) {
-            return ResultVo.fail("该邮箱未注册");
-        }
 
-        // 3. 检查频率限制（防止恶意请求）
         String limitKey = RedisConstant.PASSWORD_RESET_PREFIX + "limit:" + email;
-        Object lastSendTimeObj = redisTemplate.opsForValue().get(limitKey);
-
-        if (lastSendTimeObj != null) {
-            String lastSendTime = lastSendTimeObj.toString();
-            long timeDiff = System.currentTimeMillis() - Long.parseLong(lastSendTime);
-            if (timeDiff < 60000) {
-                return ResultVo.fail("请求过于频繁，请稍后再试");
+        try {
+            Object lastSendTimeObj = redisTemplate.opsForValue().get(limitKey);
+            if (lastSendTimeObj != null) {
+                String lastSendTime = lastSendTimeObj.toString();
+                long timeDiff = System.currentTimeMillis() - Long.parseLong(lastSendTime);
+                if (timeDiff < 60000) {
+                    return ResultVo.fail("请求过于频繁，请稍后再试");
+                }
             }
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，跳过频率限制检查", e);
         }
 
-        // 4. 生成重置令牌
         String token = UUID.randomUUID().toString().replace("-", "");
         String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + token;
 
-        // 存储令牌，关联用户 ID 和邮箱
         Map<String, String> tokenData = new HashMap<>();
         tokenData.put("userId", user.getId().toString());
         tokenData.put("email", user.getEmail());
 
-        redisTemplate.opsForValue().set(tokenKey,
-                JSON.toJSONString(tokenData),
-                Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+        String tokenDataJson = JSON.toJSONString(tokenData);
+        try {
+            redisTemplate.opsForValue().set(tokenKey,
+                    tokenDataJson,
+                    Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存存储令牌", e);
+            putToLocalCache(tokenKey, tokenDataJson, RedisConstant.PASSWORD_RESET_EXPIRE * 1000L);
+        }
 
-        // 5. 记录发送时间
-        redisTemplate.opsForValue().set(limitKey,
-                String.valueOf(System.currentTimeMillis()),
-                Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+        try {
+            redisTemplate.opsForValue().set(limitKey,
+                    String.valueOf(System.currentTimeMillis()),
+                    Duration.ofSeconds(RedisConstant.PASSWORD_RESET_EXPIRE));
+        } catch (RedisConnectionFailureException e) {
+            log.error("记录发送时间失败", e);
+            putToLocalCache(limitKey, String.valueOf(System.currentTimeMillis()),
+                    RedisConstant.PASSWORD_RESET_EXPIRE * 1000L);
+        }
 
-        // 6. 构建重置链接（前端页面）
         String resetUrl = "http://localhost:8080/reset-password?token=" + token;
 
-        // 7. ✅ 异步发送邮件（通过 RabbitMQ）
         sendResetEmailAsync(user.getEmail(), user.getUsername(), resetUrl);
 
         return ResultVo.ok("重置链接已发送到您的邮箱，请查收");
@@ -496,19 +628,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return ResultVo.fail("两次输入的密码不一致");
         }
 
-        // 2. 校验令牌
         String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + resetDTO.getToken();
-        String tokenDataStr = redisTemplate.opsForValue().get(tokenKey).toString();
+        String tokenDataStr = null;
+        boolean fromRedis = true;
+
+        try {
+            Object tokenDataObj = redisTemplate.opsForValue().get(tokenKey);
+            tokenDataStr = tokenDataObj != null ? tokenDataObj.toString() : null;
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存验证令牌", e);
+            fromRedis = false;
+            Object cachedToken = getFromLocalCache(tokenKey);
+            tokenDataStr = cachedToken != null ? cachedToken.toString() : null;
+        }
 
         if (tokenDataStr == null) {
             return ResultVo.fail("重置链接已失效，请重新申请");
         }
 
-        // 3. 解析令牌数据
         Map<String, String> tokenData = JSON.parseObject(tokenDataStr, new TypeReference<Map<String, String>>(){});
         Long userId = Long.parseLong(tokenData.get("userId"));
 
-        // 4. 更新密码
         User user = getById(userId);
         if (user == null) {
             return ResultVo.fail("用户不存在");
@@ -524,14 +664,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean updated = update(uw);
 
         if (updated) {
-            // 5. 删除已使用的令牌
-            redisTemplate.delete(tokenKey);
+            if (fromRedis) {
+                try {
+                    redisTemplate.delete(tokenKey);
+                } catch (Exception e) {
+                    log.error("删除令牌失败", e);
+                }
+            } else {
+                removeFromLocalCache(tokenKey);
+            }
 
-            // 6. 删除该用户的所有登录 token（强制下线）
-            String tokenPattern = RedisConstant.USER_TOKEN_PREFIX + userId + "*";
-            Set<String> tokens = redisTemplate.keys(tokenPattern);
-            if (tokens != null && !tokens.isEmpty()) {
-                redisTemplate.delete(tokens);
+            try {
+                String tokenPattern = RedisConstant.USER_TOKEN_PREFIX + userId + "*";
+                Set<String> tokens = redisTemplate.keys(tokenPattern);
+                if (tokens != null && !tokens.isEmpty()) {
+                    redisTemplate.delete(tokens);
+                }
+            } catch (RedisConnectionFailureException e) {
+                log.warn("Redis 不可用，无法清除用户 Token，用户需等待自然过期", e);
             }
 
             log.info("密码重置成功，用户 ID：{}", userId);
@@ -543,11 +693,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public ResultVo verifyResetToken(String token) {
-        // 构建令牌 key
         String tokenKey = RedisConstant.PASSWORD_RESET_PREFIX + token;
-        // 获取令牌数据
-        Object tokenDataObj = redisTemplate.opsForValue().get(tokenKey);
-        String tokenData = tokenDataObj != null ? tokenDataObj.toString() : null;
+        String tokenData = null;
+
+        try {
+            Object tokenDataObj = redisTemplate.opsForValue().get(tokenKey);
+            tokenData = tokenDataObj != null ? tokenDataObj.toString() : null;
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis 连接失败，使用本地缓存验证令牌", e);
+            Object cachedToken = getFromLocalCache(tokenKey);
+            tokenData = cachedToken != null ? cachedToken.toString() : null;
+        }
 
         if (tokenData == null) {
             return ResultVo.fail("令牌已失效");

@@ -51,9 +51,9 @@ public class FailedMailServiceImpl implements FailedMailService {
         log.info("🔄 开始重试失败邮件：recordId={}, to={}, subject={}",
                 record.getId(), record.getRecipient(), record.getSubject());
 
-        record.setStatus(1);
-        record.setRetryCount(record.getRetryCount() + 1);
-        failedMailRecordMapper.updateById(record);
+//        record.setStatus(1);
+//        record.setRetryCount(record.getRetryCount() + 1);
+//        failedMailRecordMapper.updateById(record);
 
         try {
             MailMessage mailMessage = MailMessage.builder()
@@ -65,9 +65,9 @@ public class FailedMailServiceImpl implements FailedMailService {
             rabbitMQProducerService.sendMail(mailMessage);
 
             log.info("✅ 失败邮件已重新发送到队列：recordId={}", record.getId());
-            record.setStatus(2);
-            record.setNextRetryTime(null);
-            failedMailRecordMapper.updateById(record);
+//            record.setStatus(2);
+//            record.setNextRetryTime(null);
+//            failedMailRecordMapper.updateById(record);
 
         } catch (Exception e) {
             log.error("❌ 重试失败：recordId={}, error={}", record.getId(), e.getMessage(), e);

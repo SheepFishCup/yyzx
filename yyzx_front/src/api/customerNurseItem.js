@@ -15,7 +15,7 @@ function listCustomerItem(data){
 }
 //客户续费
 function enewNurseItem(data){
-    return http.post('/customernurseitem/enewNurseItem',data)
+    return http.post('/customernurseitem/enewNurseItem',data,{ useJson: true })
 }
 //判断用户是否已经配置了某个指定项目
 function isIncludesItemCustomer(data){

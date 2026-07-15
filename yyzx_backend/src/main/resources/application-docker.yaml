@@ -24,11 +24,12 @@ spring:
       use-global-data-source-stat: true
 
   redis:
-    host: ${SPRING_REDIS_HOST}
-    port: 6379
+    password: ${SPRING_REDIS_PASSWORD}
     database: 0
-    password:
     timeout: 2000ms
+    sentinel:
+      master: ${SPRING_REDIS_SENTINEL_MASTER}
+      nodes: ${SPRING_REDIS_SENTINEL_NODES}
     lettuce:
       pool:
         max-active: 8

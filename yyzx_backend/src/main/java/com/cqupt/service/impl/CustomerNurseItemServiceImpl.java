@@ -7,6 +7,7 @@ package com.cqupt.service.impl;
  */
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,12 +19,16 @@ import com.cqupt.pojo.CustomerNurseItem;
 import com.cqupt.service.CustomerNurseItemService;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.CustomerNurseItemVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @Service
 public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemMapper, CustomerNurseItem> implements CustomerNurseItemService {
 
@@ -32,6 +37,9 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
 
     @Autowired
     private CustomerMapper customerMapper;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public ResultVo<Page<CustomerNurseItemVo>> listCustomerItem(CustomerNurseItemDTO customerNurseItemDTO) throws Exception {
@@ -52,21 +60,27 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
     @Override
     public ResultVo addItemToCustomer(List<CustomerNurseItem> customerNurseItems) throws Exception {
         if (customerNurseItems.size() > 0){
-            //判断选择的是级别中的护理项目 还是单独购买的护理项目
             if (customerNurseItems.get(0).getLevelId() != null){
-                //购买的级别中护理项目
                 Customer customer = new Customer();
                 customer.setId(customerNurseItems.get(0).getCustomerId());
                 customer.setLevelId(customerNurseItems.get(0).getLevelId());
-                //update  customer set level_id =? where id = ?
                 int row1 = customerMapper.updateById(customer);
                 boolean flag = saveBatch(customerNurseItems);
                 if (!(flag && row1>0)){
                     throw new Exception("添加护理项目失败");
                 }
             }else {
-                //单独购买的护理项目
                 saveBatch(customerNurseItems);
+
+                for (CustomerNurseItem item : customerNurseItems) {
+                    try {
+                        String stockKey = "nurse:item:stock:" + item.getCustomerId() + ":" + item.getItemId();
+                        Integer initialStock = item.getNurseNumber() != null ? item.getNurseNumber() : 0;
+                        redisTemplate.opsForValue().setIfAbsent(stockKey, initialStock);
+                    } catch (Exception e) {
+                        log.warn("Redis库存初始化失败，itemId: {}", item.getItemId(), e);
+                    }
+                }
             }
             return ResultVo.ok("添加护理项目成功");
         }
@@ -76,19 +90,6 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo removeCustomerLevelAndItem(Integer levelId, Long customerId) throws Exception {
-//        Customer customer = new Customer();
-//        customer.setId(customerId);
-//        customer.setLevelId(null);
-//        //update  customer set level_id =? where id = customerId
-//        customerMapper.updateById(customer);
-
-//        UpdateWrapper updateWrapper = new UpdateWrapper();
-//        Customer customer = new Customer();
-//        customer.setLevelId(null);
-//        updateWrapper.eq("id",customerId);
-//        // update customer set level_id = null where id = customerId
-//        customerMapper.update(customer,updateWrapper);
-
         //更新客户级别为null
         UpdateWrapper uw1=new UpdateWrapper();
         uw1.set("level_id",null);
@@ -100,8 +101,6 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
         uw2.set("is_deleted",1);
         uw2.eq("level_id",levelId);
         uw2.eq("customer_id",customerId);
-//        Customernurseitem customernurseitem=new Customernurseitem();
-//        customernurseitem.setIsDeleted(1);
         int row2=customerNurseItemMapper.update(null,uw2);
         if(!(row1>0&&row2>0)){
             throw new Exception("护理项目配置失败");
@@ -111,44 +110,49 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo enewNurseItem(CustomerNurseItem customerNurseItem) throws Exception {
-//        //判断用户是否配置了某个护理项目
-//        QueryWrapper queryWrapper = new QueryWrapper();
-//        queryWrapper.eq("id", customerNurseItem.getId());
-//        CustomerNurseItem customerNurseItem1 = customerNurseItemService.getOne(queryWrapper);
-//        if (customerNurseItem1 == null){
-//            return ResultVo.fail("用户未配置该护理项目");
-//        }
-//        //修改:maturityTime,nurseNumber
-//        customerNurseItem1.setMaturityTime(customerNurseItem.getMaturityTime());
-//        customerNurseItem1.setNurseNumber(customerNurseItem.getNurseNumber());
-//        //更新
-//        boolean row2 = customerNurseItemService.updateById(customerNurseItem1);
-//        //判断更新是否成功
-//        if (row2){
-//            return ResultVo.ok("续费成功");
-//        }
-//        throw new Exception("续费失败");
-        int row = customerNurseItemMapper.updateById(customerNurseItem);
-        if (row <= 0){
+        CustomerNurseItem existItem = customerNurseItemMapper.selectById(customerNurseItem.getId());
+        if (existItem == null) {
+            throw new Exception("护理项目不存在");
+        }
+
+        int addCount = customerNurseItem.getNurseNumber();
+        if (addCount <= 0) {
+            throw new Exception("续费数量必须大于0");
+        }
+
+        LambdaUpdateWrapper<CustomerNurseItem> luw = new LambdaUpdateWrapper<>();
+        luw.eq(CustomerNurseItem::getId, customerNurseItem.getId())
+                .setSql("nurse_number = nurse_number + " + addCount);
+
+        if (customerNurseItem.getMaturityTime() != null && existItem.getMaturityTime() != null) {
+            long extendedTime = existItem.getMaturityTime().getTime() +
+                    (customerNurseItem.getMaturityTime().getTime() - System.currentTimeMillis());
+            luw.set(CustomerNurseItem::getMaturityTime, new java.util.Date(extendedTime));
+        }
+
+        int row = customerNurseItemMapper.update(null, luw);
+        if (row <= 0) {
             throw new Exception("续费失败");
         }
+
+        try {
+            String stockKey = "nurse:item:stock:" + existItem.getCustomerId() + ":" + existItem.getItemId();
+            redisTemplate.opsForValue().increment(stockKey, addCount);
+        } catch (Exception redisEx) {
+            log.error("Redis库存同步失败（可能Redis宕机），下次将自动重建，itemId: {}", existItem.getItemId(), redisEx);
+            try {
+                String stockKey = "nurse:item:stock:" + existItem.getCustomerId() + ":" + existItem.getItemId();
+                redisTemplate.delete(stockKey);
+            } catch (Exception deleteEx) {
+                log.warn("删除Redis key失败（Redis可能宕机），忽略", deleteEx);
+            }
+        }
+
         return ResultVo.ok("续费成功");
     }
 
     @Override
     public ResultVo isIncludesItemCustomer(Integer itemId, Long customerId) throws Exception {
-//        QueryWrapper<CustomerNurseItem> queryWrapper = new QueryWrapper();
-//        queryWrapper.eq("item_id", itemId);
-//        //原数据库字段为custormer_id
-//        queryWrapper.eq("customer_id", customerId);
-//        queryWrapper.eq("is_deleted", 0);
-//        int row = customerNurseItemService.count(queryWrapper);
-//        if (row > 0){
-//            CustomerNurseItem item = customerNurseItemService.getOne(queryWrapper);
-//            //显示该项
-//            return ResultVo.ok("用户已配置了该护理项目", item);
-//        }
-//        return ResultVo.fail("用户未配置该护理项目");
         QueryWrapper<CustomerNurseItem> queryWrapper = new QueryWrapper();
         queryWrapper.eq("item_id", itemId);
         queryWrapper.eq("customer_id", customerId);

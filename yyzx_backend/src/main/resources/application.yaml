@@ -11,14 +11,31 @@ spring:
     username: root
     password: 123456
     druid:
-      # 基础配置
-      initial-size: 5
-      min-idle: 10
-      max-active: 25
-      max-wait: 3000
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      username: root
+      password: 123456
 
-      # Druid 1.2.x 不需要配置 filters，统计功能默认启用
-      # 只需要配置慢 SQL 参数
+      name: yyzx-druid                    # 连接池名称（便于监控）
+      initial-size: 10                    # 初始连接数（与 min-idle 一致）
+      min-idle: 10                        # 最小空闲连接数
+      max-active: 25                      # 最大连接数
+      max-wait: 3000                      # 获取连接超时时间(ms)
+
+      # 防内存泄漏（关键配置）
+      remove-abandoned: true              # 开启连接泄漏回收
+      remove-abandoned-timeout: 300       # 连接泄漏超时时间(秒)
+      log-abandoned: true                 # 记录泄漏日志
+
+      # 连接检测
+      time-between-eviction-runs-millis: 60000   # 检测间隔(ms)
+      min-evictable-idle-time-millis: 300000     # 空闲连接存活时间(ms)
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+      # 统计过滤器（Druid 1.2.x 语法）
       filter:
         stat:
           enabled: true
@@ -27,7 +44,6 @@ spring:
           slow-sql-millis: 2000
           merge-sql: true
 
-      # 启用全局统计
       use-global-data-source-stat: true
   # springfox swagger 不支持spring2.7以上的版本
 # springfox使用的匹配路径默认是ant_path_matcher，但是spring2.7以上版本默认是path_matching
@@ -83,18 +99,18 @@ spring:
             threadPriority: 5
             threadsInheritContextClassLoaderOfInitializingThread: true
     # RabbitMQ 配置
-    rabbitmq:
-      host: localhost
-      port: 5672
-      username: guest
-      password: guest
-      virtual-host: /
-      listener:
-        simple:
-          acknowledge-mode: manual  # 手动确认模式
-          concurrency: 5  # 初始消费者数量
-          max-concurrency: 10  # 最大消费者数量
-          prefetch: 3  # 每次从数据库中获取的记录数量
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual  # 手动确认模式
+        concurrency: 5  # 初始消费者数量
+        max-concurrency: 10  # 最大消费者数量
+        prefetch: 3  # 每次从数据库中获取的记录数量
 # mybatis-plus配置
 mybatis-plus:
   configuration:

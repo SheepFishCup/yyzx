@@ -4,6 +4,7 @@ import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
+import com.alibaba.druid.wall.WallFilter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
@@ -19,42 +20,48 @@ import java.util.Properties;
 @Configuration
 public class DruidConfig {
     @Bean
-    @ConfigurationProperties(prefix = "spring.datasource")
+    @ConfigurationProperties(prefix = "spring.datasource.druid")
     public DataSource druidDataSource() {
-        DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setUrl("jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false");
-        dataSource.setUsername("root");
-        dataSource.setPassword("123456");
-        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-
-        dataSource.setInitialSize(5);//初始化连接数
-        dataSource.setMinIdle(10);//最小连接数
-        dataSource.setMaxActive(25);//最大连接数
-        dataSource.setMaxWait(3000);//等待连接超时时间
-        dataSource.setTimeBetweenEvictionRunsMillis(60000);//配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
-        dataSource.setPoolPreparedStatements(true);//配置是否缓存preparedStatement，也就是PSCache
-        dataSource.setMinEvictableIdleTimeMillis(300000);//配置连接在池中的最小生存时间
-        dataSource.setValidationQuery("SELECT 1");//配置检测连接是否有效的sql
-        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);//配置了最大连接数，超过配置的maxActive之后，extraPreparedStatements会自动关闭
-        dataSource.setTestWhileIdle(true);//配置检测连接是否有效
-        dataSource.setTestOnBorrow(false);//配置连接池中连接是否被使用前校验
-        dataSource.setTestOnReturn(false);//配置连接池中连接是否被使用后校验
-
-        // 关键：手动添加 StatFilter 统计过滤器
-        StatFilter statFilter = new StatFilter();
-        statFilter.setMergeSql(true);
-        statFilter.setSlowSqlMillis(1000);
-        statFilter.setLogSlowSql(true);
-
-        // 将 StatFilter 添加到数据源
-        dataSource.getProxyFilters().add(statFilter);
-
-        // 添加防止内存泄漏的关键配置
-        dataSource.setRemoveAbandoned(true); // 删除泄露的连接
-        dataSource.setRemoveAbandonedTimeout(1800); // 连接泄露超时时间(秒)
-        dataSource.setLogAbandoned(true); // 记录泄露日志
-
-        return dataSource;
+        return new DruidDataSource();
+//        DruidDataSource dataSource = new DruidDataSource();
+//        dataSource.setUrl("jdbc:mysql://localhost:3306/yyzx?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&useSSL=false");
+//        dataSource.setUsername("root");
+//        dataSource.setPassword("123456");
+//        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+//
+//        dataSource.setInitialSize(5);//初始化连接数
+//        dataSource.setMinIdle(2);//最小连接数
+//        dataSource.setMaxActive(20);//最大连接数
+//        dataSource.setMaxWait(3000);//等待连接超时时间
+//        dataSource.setTimeBetweenEvictionRunsMillis(60000);//配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+//        dataSource.setPoolPreparedStatements(true);//配置是否缓存preparedStatement，也就是PSCache
+//        dataSource.setMinEvictableIdleTimeMillis(300000);//配置连接在池中的最小生存时间
+//        dataSource.setValidationQuery("SELECT 1");//配置检测连接是否有效的sql
+//        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);//配置了最大连接数，超过配置的maxActive之后，extraPreparedStatements会自动关闭
+//        dataSource.setTestWhileIdle(true);//配置检测连接是否有效
+//        dataSource.setTestOnBorrow(false);//配置连接池中连接是否被使用前校验
+//        dataSource.setTestOnReturn(false);//配置连接池中连接是否被使用后校验
+//
+//        // 关键：手动添加 StatFilter 统计过滤器
+//        StatFilter statFilter = new StatFilter();
+//        statFilter.setMergeSql(true);
+//        statFilter.setSlowSqlMillis(1000);//慢查询阈值为1秒
+//        statFilter.setLogSlowSql(true);
+//
+//        // 添加 WallFilter 防止 SQL 注入
+//        WallFilter wallFilter = new WallFilter();
+//        wallFilter.setDbType("mysql");
+//
+//        // 将 StatFilter 添加到数据源
+//        dataSource.getProxyFilters().add(statFilter);
+//        dataSource.getProxyFilters().add(wallFilter);
+//
+//        // 添加防止内存泄漏的关键配置
+//        dataSource.setRemoveAbandoned(true); // 删除泄露的连接
+//        dataSource.setRemoveAbandonedTimeout(300); // 连接泄露超时时间(秒)
+//        dataSource.setLogAbandoned(true); // 记录泄露日志
+//
+//        return dataSource;
     }
     
     /**
