@@ -1,7 +1,7 @@
 package com.cqupt.validator;
 
 
-import com.cqupt.annotaion.File;
+import com.cqupt.annotation.File;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.ConstraintValidator;

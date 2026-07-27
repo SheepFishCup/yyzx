@@ -49,8 +49,8 @@ public class AdminController {
     private static final long CACHE_EXPIRE_MILLIS = 300000;
 
     private static class CacheEntry {
-        Object value;
-        long expireTime;
+        volatile Object value;
+        volatile long expireTime;
 
         CacheEntry(Object value, long ttlMillis) {
             this.value = value;

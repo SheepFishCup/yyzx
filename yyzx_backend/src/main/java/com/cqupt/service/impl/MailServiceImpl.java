@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -31,6 +32,7 @@ public class MailServiceImpl implements MailService {
     @Value("${spring.mail.username}")
     private String from;
 
+    @Async("taskExecutor")
     @Override
     public void sendSimpleMail(String to, String subject, String content) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -42,6 +44,7 @@ public class MailServiceImpl implements MailService {
         log.info("简单邮件发送成功：{}", to);
     }
 
+    @Async("taskExecutor")
     @Override
     public void sendHtmlMail(String to, String subject, String content) {
         try {
@@ -59,6 +62,7 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    @Async("taskExecutor")
     @Override
     public void sendPasswordResetEmail(String to, String resetUrl, String username) {
         Context context = new Context();

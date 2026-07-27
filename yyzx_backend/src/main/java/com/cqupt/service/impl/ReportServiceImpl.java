@@ -137,7 +137,7 @@ public class ReportServiceImpl implements ReportService {
         // 查询总床位数
         QueryWrapper<Bed> bedQuery = new QueryWrapper<>();
         bedQuery.eq("is_deleted", 0);
-        Integer totalBeds = bedMapper.selectCount(bedQuery);
+        Long totalBeds = bedMapper.selectCount(bedQuery);
 
         // 查询已入住人数（通过客户表查询在住客户）
         QueryWrapper<Customer> customerQuery = new QueryWrapper<>();
@@ -145,10 +145,10 @@ public class ReportServiceImpl implements ReportService {
         customerQuery.isNull("retreat_date"); // 未退住的客户
 
         List<Customer> customers = customerMapper.selectList(customerQuery);
-        Integer occupiedBeds = customers.size();
+        Long occupiedBeds = (long) customers.size();
 
         // 计算空闲床位
-        Integer availableBeds = totalBeds - occupiedBeds;
+        long availableBeds = totalBeds - occupiedBeds;
 
         // 计算床位使用率
         BigDecimal occupancyRate = totalBeds > 0
@@ -160,14 +160,14 @@ public class ReportServiceImpl implements ReportService {
         QueryWrapper<Customer> newCustomerQuery = new QueryWrapper<>();
         newCustomerQuery.eq("is_deleted", 0);
         newCustomerQuery.between("checkin_date", startDateTime, endDateTime);
-        Integer newCustomers = customerMapper.selectCount(newCustomerQuery);
+        Long newCustomers = customerMapper.selectCount(newCustomerQuery);
 
         // 查询指定时间段内退住人数
         QueryWrapper<Customer> leftCustomerQuery = new QueryWrapper<>();
         leftCustomerQuery.eq("is_deleted", 0);
         leftCustomerQuery.isNotNull("retreat_date");
         leftCustomerQuery.between("retreat_date", startDateTime, endDateTime);
-        Integer leftCustomers = customerMapper.selectCount(leftCustomerQuery);
+        Long leftCustomers = customerMapper.selectCount(leftCustomerQuery);
 
         // 查询护理级别分布
         NursingLevelDistVo levelDistribution = getNursingLevelDistribution(customers);

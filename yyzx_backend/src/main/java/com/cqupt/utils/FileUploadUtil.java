@@ -117,7 +117,8 @@ public class FileUploadUtil {
             }
         }
 
-        String fileName = originalFilename;
+        String fileName = UUID.randomUUID().toString() + "." + extension;
+
         // 创建目标文件
         File destFile = new File(savePath, fileName);
 

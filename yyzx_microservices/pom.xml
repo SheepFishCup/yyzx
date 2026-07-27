@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.cqupt</groupId>
+    <artifactId>yyzx-microservices</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>yyzx-microservices</name>
+    <description>颐养中心微服务父工程</description>
+
+    <!-- ==================== 子模块 ==================== -->
+    <modules>
+        <module>yyzx-common</module>
+        <module>yyzx-gateway</module>
+        <module>yyzx-auth</module>
+        <module>yyzx-customer</module>
+        <module>yyzx-bed</module>
+        <module>yyzx-nursing</module>
+        <module>yyzx-checkinout</module>
+        <module>yyzx-meal</module>
+        <module>yyzx-notification</module>
+        <module>yyzx-report</module>
+        <module>yyzx-task</module>
+    </modules>
+
+    <!-- ==================== 版本属性 ==================== -->
+    <properties>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Spring 生态 -->
+        <spring-boot.version>2.7.18</spring-boot.version>
+        <spring-cloud.version>2021.0.9</spring-cloud.version>
+        <spring-cloud-alibaba.version>2021.0.6.1</spring-cloud-alibaba.version>
+
+        <!-- 数据库 & ORM -->
+        <mysql.version>8.0.11</mysql.version>
+        <mybatis-plus.version>3.5.1</mybatis-plus.version>
+        <druid.version>1.2.6</druid.version>
+
+        <!-- 缓存 & 分布式 -->
+        <redisson.version>3.17.7</redisson.version>
+
+        <!-- 认证 -->
+        <jwt.version>3.10.3</jwt.version>
+        <jjwt.version>0.9.1</jjwt.version>
+
+        <!-- 工具 -->
+        <lombok.version>1.18.6</lombok.version>
+        <fastjson.version>1.2.76</fastjson.version>
+        <knife4j.version>4.4.0</knife4j.version>
+        <httpclient.version>4.5.13</httpclient.version>
+        <commons-lang.version>2.6</commons-lang.version>
+
+        <!-- 定时任务 -->
+        <quartz.version>2.3.2</quartz.version>
+
+        <!-- Excel -->
+        <poi.version>3.16</poi.version>
+
+        <!-- 其他 -->
+        <kaptcha.version>2.3.2</kaptcha.version>
+        <dingtalk-sdk.version>2.0.0</dingtalk-sdk.version>
+        <wechatpay.version>0.4.8</wechatpay.version>
+    </properties>
+
+    <!-- ==================== 统一依赖版本管理 ==================== -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring Cloud Alibaba BOM -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- ======== 内部公共模块 ======== -->
+            <dependency>
+                <groupId>com.cqupt</groupId>
+                <artifactId>yyzx-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ======== OpenFeign（服务间同步调用） ======== -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-openfeign</artifactId>
+                <version>3.1.9</version>
+            </dependency>
+
+            <!-- ======== 数据库 ======== -->
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+
+            <!-- MyBatis-Plus -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-generator</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+
+            <!-- Druid 连接池 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+
+            <!-- ======== 缓存 & 分布式 ======== -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <!-- ======== 认证 & JWT ======== -->
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- ======== 工具 ======== -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+
+            <!-- Swagger 2 注解（Knife4j 4.x 向后兼容 io.swagger.annotations.*） -->
+            <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>1.5.22</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-models</artifactId>
+                <version>1.5.22</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+
+            <!-- ======== 定时任务 ======== -->
+            <dependency>
+                <groupId>org.quartz-scheduler</groupId>
+                <artifactId>quartz</artifactId>
+                <version>${quartz.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.quartz-scheduler</groupId>
+                <artifactId>quartz-jobs</artifactId>
+                <version>${quartz.version}</version>
+            </dependency>
+
+            <!-- ======== Excel ======== -->
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi</artifactId>
+                <version>${poi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${poi.version}</version>
+            </dependency>
+
+            <!-- ======== 其他 ======== -->
+            <dependency>
+                <groupId>com.github.penggle</groupId>
+                <artifactId>kaptcha</artifactId>
+                <version>${kaptcha.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>alibaba-dingtalk-service-sdk</artifactId>
+                <version>${dingtalk-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wechatpay-apiv3</groupId>
+                <artifactId>wechatpay-apache-httpclient</artifactId>
+                <version>${wechatpay.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ==================== 构建配置 ==================== -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Maven 编译插件 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                    </configuration>
+                </plugin>
+
+                <!-- Spring Boot Maven 插件（仅业务服务和网关使用） -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <!-- ==================== 所有子模块公共依赖（无需写版本号） ==================== -->
+    <dependencies>
+        <!-- Lombok（所有模块都需要） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

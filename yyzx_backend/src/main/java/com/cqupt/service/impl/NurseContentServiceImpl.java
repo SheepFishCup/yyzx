@@ -62,7 +62,7 @@ public class NurseContentServiceImpl extends ServiceImpl<NurseContentMapper, Nur
         if (nursCcontent.getStatus() == 2){
             QueryWrapper qwCount=new QueryWrapper();
             qwCount.eq("level_id",nursCcontent.getId());
-            int count = nurseLevelItemMapper.selectCount(qwCount);
+            Long count = nurseLevelItemMapper.selectCount(qwCount);
             if (count > 0){
                 QueryWrapper qw=new QueryWrapper();
                 qw.eq("level_id",nursCcontent.getId());
@@ -88,12 +88,12 @@ public class NurseContentServiceImpl extends ServiceImpl<NurseContentMapper, Nur
         QueryWrapper qw=new QueryWrapper();
         qw.eq("item_id",id);
         boolean updateSuccess = updateById(nurseContent);
-        int customerCount = customerNurseItemMapper.selectCount(qw);
+        Long customerCount = customerNurseItemMapper.selectCount(qw);
         if (customerCount > 0){
             throw new DeletionNotAllowedException("当前护理项目正在使用中，请先删除该护理项目在客户护理项目列表中的记录");
         }
         //查询当前的护理项目是否在护理级别中，如果在列表中，则删除
-        int count = nurseLevelItemMapper.selectCount(qw);
+        Long count = nurseLevelItemMapper.selectCount(qw);
         if (count > 0){
             int row = nurseLevelItemMapper.delete(qw);
             boolean temp = updateById(nurseContent);

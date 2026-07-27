@@ -21,22 +21,22 @@ public class CustomerStatsVo implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "总床位数")
-    private Integer totalBeds;
+    private Long totalBeds;
 
     @ApiModelProperty(value = "已入住人数")
-    private Integer occupiedBeds;
+    private Long occupiedBeds;
 
     @ApiModelProperty(value = "空闲床位数")
-    private Integer availableBeds;
+    private Long availableBeds;
 
     @ApiModelProperty(value = "床位使用率（%）")
     private BigDecimal occupancyRate;
 
     @ApiModelProperty(value = "本月新入住人数")
-    private Integer newCustomers;
+    private Long newCustomers;
 
     @ApiModelProperty(value = "本月退住人数")
-    private Integer leftCustomers;
+    private Long leftCustomers;
 
     @ApiModelProperty(value = "护理级别分布")
     private NursingLevelDistVo levelDistribution;

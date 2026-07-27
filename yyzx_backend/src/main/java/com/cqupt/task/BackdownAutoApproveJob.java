@@ -28,9 +28,9 @@ import java.util.List;
 @Component
 public class BackdownAutoApproveJob extends QuartzJobBean {
 
-    private static BackdownService backdownService;
-    private static CustomerService customerService;
-    private static BedService bedService;
+    private static volatile BackdownService backdownService;
+    private static volatile CustomerService customerService;
+    private static volatile BedService bedService;
 
     @Autowired
     public void setBackdownService(BackdownService backdownService) {

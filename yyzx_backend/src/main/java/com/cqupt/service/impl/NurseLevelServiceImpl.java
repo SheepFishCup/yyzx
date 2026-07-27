@@ -38,7 +38,7 @@ public class NurseLevelServiceImpl extends ServiceImpl<NurseLevelMapper, NurseLe
         QueryWrapper qw=new QueryWrapper();
         qw.eq("level_id",nurseLevelItem.getLevelId());
         qw.eq("item_id",nurseLevelItem.getItemId());
-        int row=nurseLevelItemMapper.selectCount(qw);
+        Long row=nurseLevelItemMapper.selectCount(qw);
         if (row>0){
             return ResultVo.fail("该护理项目已添加");
         }

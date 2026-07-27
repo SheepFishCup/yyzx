@@ -1,4 +1,4 @@
-package com.cqupt.annotaion;
+package com.cqupt.annotation;
 
 
 import com.cqupt.validator.FileValidator;

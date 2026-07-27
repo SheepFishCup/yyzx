@@ -157,7 +157,7 @@ public class CustomerNurseItemServiceImpl extends ServiceImpl<CustomerNurseItemM
         queryWrapper.eq("item_id", itemId);
         queryWrapper.eq("customer_id", customerId);
         queryWrapper.eq("is_deleted", 0);
-        int row = customerNurseItemMapper.selectCount(queryWrapper);
+        Long row = customerNurseItemMapper.selectCount(queryWrapper);
         if (row > 0){
             List<CustomerNurseItem> item = customerNurseItemMapper.selectList(queryWrapper);
             return ResultVo.ok("该用户已购买该护理项目", item.get(0));

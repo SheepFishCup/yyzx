@@ -7,7 +7,7 @@ package com.cqupt.controller.admin;
  */
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.cqupt.annotaion.File;
+import com.cqupt.annotation.File;
 import com.cqupt.constant.FileUploadConstant;
 import com.cqupt.exception.BusinessException;
 import com.cqupt.mapper.FoodMapper;
@@ -67,26 +67,24 @@ public class FoodContoller {
         }
         try {
             String originalFilename = file.getOriginalFilename();
-
-            // 提取文件名（不含扩展名）和扩展名
             String fileNameWithoutExt = originalFilename.substring(0, originalFilename.lastIndexOf("."));
             String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
-
-            // 构建要检查的文件名
             String fileNameToCheck = fileNameWithoutExt + "." + extension;
 
-            // 检查数据库中是否已有相同的文件名
-            QueryWrapper<Food> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("food_img", fileNameToCheck);
-            Food existingFood = getExistingFood(queryWrapper);
-            if (existingFood != null){
-                log.warn("文件已存在");
-                throw new BusinessException("文件已存在");
+            // 以文件名为锁，防止同名文件并发上传冲突
+            synchronized (fileNameToCheck.intern()) {
+                QueryWrapper<Food> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("food_img", fileNameToCheck);
+                Food existingFood = getExistingFood(queryWrapper);
+                if (existingFood != null) {
+                    log.warn("文件已存在");
+                    throw new BusinessException("文件已存在");
+                }
+                String fileName = FileUploadUtil.upload(file);
+                String path = FileUploadConstant.FILE_ACCESS_PATH + fileName;
+                log.info("文件上传成功，访问路径：{}", path);
+                return ResultVo.ok(fileName);
             }
-            String fileName = FileUploadUtil.upload(file);
-            String path = FileUploadConstant.FILE_ACCESS_PATH + fileName;
-            log.info("文件上传成功，访问路径：{}", path);
-            return ResultVo.ok(fileName);
         } catch (IOException e) {
             log.error("文件上传失败", e);
             return ResultVo.error("文件上传失败：" + e.getMessage());

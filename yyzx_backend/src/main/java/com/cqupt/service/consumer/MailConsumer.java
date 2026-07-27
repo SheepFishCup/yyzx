@@ -58,7 +58,12 @@ public class MailConsumer {
 
                 sendPasswordResetNotify(mailMessage.getTo(), username);
             } else {
-                sendSimpleMail(mailMessage);
+                // 异步发送普通邮件
+                mailService.sendSimpleMail(
+                        mailMessage.getTo(),
+                        mailMessage.getSubject(),
+                        mailMessage.getContent()
+                );
             }
 
             channel.basicAck(deliveryTag, false);
