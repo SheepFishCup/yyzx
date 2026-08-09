@@ -161,11 +161,34 @@ docker-compose up -d
 
 ## ✨ 项目亮点
 
-- **JWT 无状态认证** + 5 次失败锁定 + 邮件密码重置
-- **Redis Lua 原子库存扣减** + 乐观锁降级
-- **布隆过滤器 + Redis Set** 登录黑名单
-- **分布式锁 + 随机过期时间** 防缓存击穿/雪崩
-- **RabbitMQ + 死信队列** 邮件失败自动重试
-- **钉钉机器人** HMAC 加签 Webhook 推送
-- 客户查询 **165ms → 69ms，TPS 447**
-- Feign + Sentinel + Resilience4j **三层容错体系**
+### 业务功能
+- **Redis Lua 原子库存扣减** + 乐观锁 DB 降级，确保护理记录扣减零误差
+- **床位交换** 5 步事务操作：关旧记录→建新记录→释放旧床→占新床→更新客户信息
+- **布隆过滤器 + Redis Set** 混合黑名单，100K 预期容量 / 1% 误判率
+- **RabbitMQ 死信队列**：邮件发送失败 → TTL 5min → DLX → FailedMailRecord → 每 5 分钟自动重试（最多 3 次）
+- **Quartz 定时任务**：退住超 24h 自动审批 + 周报生成 + 延迟队列处理
+
+### 性能优化
+- 客户信息查询 **165ms → 69ms，TPS 447**
+- Redis + Spring Cache 热点数据缓存 + **随机过期时间**（防雪崩）
+- Redisson 分布式锁 **缓存击穿保护**（cache-through 模式）
+- EXISTS 替换子查询 + 关键索引优化 + Druid 慢 SQL 监控
+
+### 安全体系
+- **无状态 JWT 认证**（纯签名校验，无 Redis 依赖）+ 5 次失败锁定 + BCrypt 密码加密
+- **邮件验证码** 覆盖密码重置全流程
+- **Internal 端点共享密钥**（`X-Internal-Token` + `InternalAuthInterceptor`）防止内部 API 被外部直接调用
+- Druid 监控面板 + 慢 SQL 日志 + 连接泄漏检测
+
+### 微服务治理
+- **34 个冗余 Mapper 文件已清理**，7/9 模块实现零跨域数据直连
+- **Feign + Resilience4j + Sentinel 三层容错**：超时 5s → 50% 失败率熔断 10s → QPS 限流 + 降级
+- **Gateway 统一认证** 替代每服务独立 JwtTokenInterceptor，`X-User-Id` Header 传播用户上下文
+- **报表模块重写**：修复原版 9 个 bug（SQL 崩溃/switch 错位/双重写入/硬编码假数据/MIME 类型错误等）
+- **H2 内存库测试体系**：10 个 `@SpringBootTest` 无需外部中间件即可运行
+
+### 运维工具
+- PowerShell **一键登录脚本**（弹验证码图片 → 输入 → 保存 token）+ `call-api` 快捷测试
+- **Docker Compose 14 容器编排**（MySQL + Redis + RabbitMQ + Nacos + 10 微服务）
+- Nacos 11 份共享配置（`yyzx-common.yaml` + 10 服务配置）
+- `start-all.bat` **一键启动全部 10 服务**（自动开独立窗口，按依赖顺序间隔启动）
