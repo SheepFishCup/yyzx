@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cqupt.bed.mapper.BedDetailsMapper">
+    <!--    通用查询映射结果-->
+    <resultMap id="BaseResultMap" type="com.cqupt.pojo.BedDetails">
+        <id column="id" property="id" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+        <result column="bed_details" property="bedDetails" />
+        <result column="customer_id" property="customerId" />
+        <result column="bed_id" property="bedId" />
+        <result column="is_deleted" property="isDeleted" />
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, start_date, end_date, bed_details, customer_id, bed_id, is_deleted
+    </sql>
+    <select id="selectBedDetails" resultType="BedDetailsVo">
+        SELECT
+            b.id,
+            b.is_deleted,
+            b.start_date,
+            b.end_date,
+            b.bed_details,
+            b.customer_id,
+            b.bed_id,
+            c.bed_id,
+            c.customer_name,
+            c.customer_sex
+        FROM
+            beddetails b
+                LEFT JOIN customer c ON b.customer_id=c.id
+        <where>
+            <if test="bedDetailsDTO !=null and bedDetailsDTO.customerName != null and bedDetailsDTO.customerName !=''">
+                and c.customer_name LIKE CONCAT('%',#{bedDetailsDTO.customerName},'%')
+            </if>
+            <if test="bedDetailsDTO !=null and bedDetailsDTO.startDate != null and bedDetailsDTO.endDate != null">
+                and b.start_date BETWEEN #{bedDetailsDTO.startDate} AND #{bedDetailsDTO.endDate}
+            </if>
+            <if test="bedDetailsDTO !=null and bedDetailsDTO.isDeleted != null">
+                and b.is_deleted=#{bedDetailsDTO.isDeleted}
+            </if>
+        </where>
+        ORDER BY b.end_date DESC
+    </select>
+</mapper>

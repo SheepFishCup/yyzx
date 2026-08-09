@@ -1,0 +1,36 @@
+# ============================================================
+# 测试环境配置（H2 内存数据库 + 排除外部依赖）
+# 使单元测试无需 MySQL/Redis/RabbitMQ/Nacos 即可运行
+# ============================================================
+
+spring:
+  datasource:
+    druid:
+      driver-class-name: org.h2.Driver
+      url: jdbc:h2:mem:yyzx_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+      username: sa
+      password:
+      initial-size: 1
+      min-idle: 1
+      max-active: 5
+  # 排除外部依赖自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.sentinel.SentinelAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfiguration
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+# H2 控制台（调试用，默认关闭）
+# 访问 http://localhost:8081/h2-console
+  h2:
+    console:
+      enabled: false

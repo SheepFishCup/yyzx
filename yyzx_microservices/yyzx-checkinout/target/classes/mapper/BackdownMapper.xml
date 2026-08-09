@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cqupt.checkinout.mapper.BackdownMapper">
+    <resultMap id="BaseResultMap" type="com.cqupt.pojo.Backdown">
+        <id column="id" property="id" />
+        <result column="remarks" property="remarks" />
+        <result column="is_deleted" property="isDeleted" />
+        <result column="customer_id" property="customerId" />
+        <result column="retreattime" property="retreatTime" />
+        <result column="retreattype" property="retreatType" />
+        <result column="retreatreason" property="retreatReason" />
+        <result column="auditstatus" property="auditStatus" />
+        <result column="auditperson" property="auditPerson" />
+        <result column="audittime" property="auditTime" />
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,remark, is_deleted,customer_id, retreattime, retreattype, retreatreason, auditstatus, auditperson, audittime
+    </sql>
+    <!-- 通过当前登录护工查询对应客户信息-->
+    <select id="selectBackdownVo" resultType="BackdownVo">
+    SELECT distinct
+        bdn.id,
+        bdn.remarks,
+        bdn.is_deleted,
+        bdn.customer_id,
+        bdn.retreattime,
+        bdn.retreattype,
+        bdn.retreatreason,
+        bdn.auditstatus,
+        bdn.auditperson,
+        bdn.audittime,
+        bd.bed_details,
+        bd.bed_id,
+        cus.customer_name,
+        cus.checkin_date
+    FROM
+        backdown bdn
+        INNER JOIN customer cus ON bdn.customer_id = cus.id
+        INNER JOIN beddetails bd ON bdn.customer_id = bd.customer_id AND bd.is_deleted = 0  <!-- 添加beddetails的删除条件 -->
+        INNER JOIN user u ON cus.user_id = u.id
+    <where>
+        bdn.is_deleted=0
+        <if test="userId != null and userId !=''">
+            and cus.user_id=#{userId}
+        </if>
+        <if test="customerId != null">
+            and bdn.customer_id=#{customerId}
+        </if>
+    </where>
+    </select>
+</mapper>

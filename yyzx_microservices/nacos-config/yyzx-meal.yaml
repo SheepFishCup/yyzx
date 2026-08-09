@@ -1,0 +1,10 @@
+server:
+  port: 8086
+  servlet:
+    context-path: /yyzx
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB

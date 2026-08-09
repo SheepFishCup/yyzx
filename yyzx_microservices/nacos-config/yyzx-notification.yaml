@@ -1,0 +1,25 @@
+server:
+  port: 8087
+spring:
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+
+dingtalk:
+  robot:
+    webhook: ${DINGTALK_WEBHOOK:}
+    secret: ${DINGTALK_SECRET:}

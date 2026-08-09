@@ -1,0 +1,5 @@
+com\cqupt\gateway\filter\JwtAuthGlobalFilter.class
+com\cqupt\gateway\config\SentinelGatewayConfig.class
+com\cqupt\gateway\config\GatewayCorsConfig.class
+com\cqupt\gateway\filter\AuthProperties.class
+com\cqupt\gateway\YyzxGatewayApplication.class

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cqupt.report.mapper.CustomerMapper">
+    <resultMap id="BaseResultMap" type="com.cqupt.pojo.Customer">
+        <id column="id" property="id" />
+        <result column="customer_name" property="customerName" />
+        <result column="customer_age" property="customerAge" />
+        <result column="customer_sex" property="customerSex" />
+        <result column="id_card" property="idcard" />
+        <result column="room_no" property="roomNo" />
+        <result column="building_no" property="buildingNo" />
+        <result column="checkin_date" property="checkinDate" />
+        <result column="expiration_date" property="expirationDate" />
+        <result column="contact_tel" property="contactTel" />
+        <result column="bed_id" property="bedId" />
+        <result column="psychosomatic_state" property="psychosomaticState" />
+        <result column="attention" property="attention" />
+        <result column="birthday" property="birthday" />
+        <result column="height" property="height" />
+        <result column="weight" property="weight" />
+        <result column="blood_type" property="bloodType" />
+        <result column="filepath" property="filepath" />
+        <result column="user_id" property="userId" />
+        <result column="level_id" property="levelId" />
+        <result column="family_member" property="familyMember" />
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, customer_name, customer_age, customer_sex, id_card, room_no, building_no, checkin_date, expiration_date, contact_tel, bed_id, psychosomatic_state, attention, birthday, height, weight, blood_type, filepath, user_id, level_id, family_member
+    </sql>
+    <select id="selectPageVo" resultType="com.cqupt.vo.KhxxCustomerVo">
+        select
+        c.id,
+        c.is_deleted,
+        c.customer_name,
+        c.customer_age,
+        c.customer_sex,
+        c.idcard,
+        c.room_no,
+        c.building_no,
+        c.checkin_date,
+        c.expiration_date,
+        c.contact_tel,
+        c.bed_id,
+        c.psychosomatic_state,
+        c.attention,
+        c.birthday,
+        c.height,
+        c.weight,
+        c.blood_type,
+        c.filepath,
+        c.user_id,
+        c.level_id,
+        c.family_member,
+        u.nickname,
+        n.level_name,
+        b.bed_no
+        from
+        customer c
+        left join user u on c.user_id = u.id
+        left join nurselevel n on c.level_id = n.id
+        left join bed b on c.bed_id = b.id
+        <where>
+            <if test="manType != null and manType == 1">
+                <!-- 优化 1: 无护理项目 - 使用 NOT EXISTS -->
+                AND NOT EXISTS (
+                SELECT 1 FROM customernurseitem cni
+                WHERE cni.customer_id = c.id
+                AND cni.is_deleted = 0
+                LIMIT 1
+                )
+            </if>
+            <if test="manType != null and manType == 2">
+                <!-- 优化 2: 有护理项目 - 使用 EXISTS -->
+                AND EXISTS (
+                    SELECT 1 FROM customernurseitem cni
+                    WHERE cni.customer_id = c.id
+                    AND cni.is_deleted = 0
+                    LIMIT 1
+                )
+            </if>
+            <if test="manType != null and manType == 3">
+                and c.user_id = -1
+            </if>
+            <if test="customerName != null and customerName != ''">
+                AND c.customer_name LIKE CONCAT('%',#{customerName},'%')
+            </if>
+            <if test="userId != null">
+                AND c.user_id = #{userId}
+            </if>
+            and c.is_deleted = 0
+        </where>
+        order by c.id desc
+    </select>
+
+</mapper>

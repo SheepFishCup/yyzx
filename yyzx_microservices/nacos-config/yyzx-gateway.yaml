@@ -1,0 +1,61 @@
+# ============================================================
+# Nacos 配置 — yyzx-gateway
+# Data ID: yyzx-gateway.yaml
+# ============================================================
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-admin
+          uri: lb://yyzx-auth
+          predicates: [Path=/admin/**]
+        - id: auth-role
+          uri: lb://yyzx-auth
+          predicates: [Path=/role/**]
+        - id: auth-menu
+          uri: lb://yyzx-auth
+          predicates: [Path=/menu/**]
+        - id: auth-rolemenu
+          uri: lb://yyzx-auth
+          predicates: [Path=/rolemenu/**]
+        - id: customer
+          uri: lb://yyzx-customer
+          predicates: [Path=/customer/**,/customerpreference/**,/customernurseitem/**,/patient/**]
+        - id: bed
+          uri: lb://yyzx-bed
+          predicates: [Path=/bed/**,/beddetails/**,/room/**]
+        - id: nursing
+          uri: lb://yyzx-nursing
+          predicates: [Path=/nursecontent/**,/nurselevel/**,/nurserecord/**]
+        - id: checkinout
+          uri: lb://yyzx-checkinout
+          predicates: [Path=/backdown/**,/outward/**]
+        - id: meal
+          uri: lb://yyzx-meal
+          predicates: [Path=/food/**,/meal/**]
+        - id: report
+          uri: lb://yyzx-report
+          predicates: [Path=/report/**]
+
+yyzx:
+  gateway:
+    jwt-secret: ${JWT_SECRET:cqupt123456}
+    exclude-paths:
+      - /admin/generate
+      - /admin/loginWithCaptcha
+      - /admin/login
+      - /admin/forgotPassword
+      - /admin/resetPassword
+      - /admin/verifyResetToken
+      - /patient/login
+      - /doc.html
+      - /webjars/**
+      - /v3/api-docs/**
+      - /swagger-resources/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /images/**
+      - /druid/**

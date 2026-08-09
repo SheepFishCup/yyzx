@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cqupt.checkinout.mapper.OutwardMapper">
+    <resultMap id="BaseResultMap" type="com.cqupt.pojo.Outward">
+        <id column="id" property="id"/>
+        <result column="remarks" property="remarks"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="outgoingreason" property="outgoingReason"/>
+        <result column="outgoingtime" property="outgoingTime"/>
+        <result column="expectedreturntime" property="expectedReturnTime"/>
+        <result column="actualreturntime" property="actualReturnTime"/>
+        <result column="escorted" property="escorted"/>
+        <result column="relation" property="relation"/>
+        <result column="escortedtel" property="escortedTel"/>
+        <result column="auditstatus" property="auditStatus"/>
+        <result column="auditperson" property="auditPerson"/>
+        <result column="audittime" property="auditTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, customer_id, outgoingreason, outgoingtime, expectedreturntime, actualreturntime, escorted, relation, escortedtel, auditstatus, auditperson, audittime, remark, is_deleted
+    </sql>
+    <select id="selectOutwardVo" resultType="com.cqupt.vo.OutwardVo">
+        select distinct
+        u.nickname,
+        u.phone_number,
+        ow.id,
+        ow.remarks,
+        ow.is_deleted,
+        ow.customer_id,
+        ow.outgoingreason,
+        ow.outgoingtime,
+        ow.expectedreturntime,
+        ow.actualreturntime,
+        ow.escorted,
+        ow.relation,
+        ow.escortedtel,
+        ow.auditstatus,
+        ow.auditperson,
+        ow.audittime,
+        cs.customer_name
+        from outward ow,user u,customer cs
+        where cs.user_id=u.id
+        and ow.customer_id = cs.id
+        and ow.is_deleted=0
+        <if test="userId!=null and userId!=''">
+            and cs.user_id=#{userId}
+        </if>
+        <if test="customerId!=null and customerId!=''">
+            and ow.customer_id= #{customerId}
+        </if>
+    </select>
+</mapper>

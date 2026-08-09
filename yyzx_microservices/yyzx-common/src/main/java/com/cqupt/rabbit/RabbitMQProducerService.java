@@ -1,0 +1,48 @@
+package com.cqupt.rabbit;
+
+import com.cqupt.constant.RabbitMQConstant;
+import com.cqupt.dto.LogMessage;
+import com.cqupt.dto.MailMessage;
+import com.cqupt.dto.NotifyMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+public class RabbitMQProducerService {
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    public void sendMail(MailMessage mailMessage) {
+        log.info("发送邮件消息到队列：{}", mailMessage.getTo());
+        rabbitTemplate.convertAndSend(RabbitMQConstant.EXCHANGE_NAME,
+                RabbitMQConstant.MAIL_ROUTING_KEY, mailMessage);
+    }
+
+    public void sendNotify(NotifyMessage notifyMessage) {
+        log.info("发送通知消息到队列：userId={}, type={}",
+                notifyMessage.getUserId(), notifyMessage.getType());
+        rabbitTemplate.convertAndSend(RabbitMQConstant.EXCHANGE_NAME,
+                RabbitMQConstant.NOTIFY_ROUTING_KEY, notifyMessage);
+    }
+
+    public void sendLog(LogMessage logMessage) {
+        log.debug("发送日志消息到队列：module={}, action={}",
+                logMessage.getModule(), logMessage.getAction());
+        rabbitTemplate.convertAndSend(RabbitMQConstant.EXCHANGE_NAME,
+                RabbitMQConstant.LOG_ROUTING_KEY, logMessage);
+    }
+
+    /**
+     * 发送管理员群组通知
+     */
+    public void sendAdminNotify(NotifyMessage notifyMessage) {
+        log.info("发送管理员群组通知：title={}, type={}",
+                notifyMessage.getTitle(), notifyMessage.getType());
+        rabbitTemplate.convertAndSend(RabbitMQConstant.EXCHANGE_NAME,
+                RabbitMQConstant.ADMIN_NOTIFY_ROUTING_KEY, notifyMessage);
+    }
+}

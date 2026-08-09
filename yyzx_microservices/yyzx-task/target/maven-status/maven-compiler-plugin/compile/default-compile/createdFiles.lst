@@ -1,0 +1,15 @@
+com\cqupt\task\job\BackdownAutoApproveJob.class
+com\cqupt\task\service\impl\FailedMailServiceImpl.class
+com\cqupt\task\config\RedisConfig.class
+com\cqupt\task\config\DruidConfig.class
+com\cqupt\task\job\FailedMailRetryJob.class
+com\cqupt\task\config\MybatisPlusConfig.class
+com\cqupt\task\config\QuartzConfig$1.class
+com\cqupt\task\config\QuartzConfig.class
+com\cqupt\task\job\DelayQueueProcessor.class
+com\cqupt\task\config\WebConfig.class
+com\cqupt\task\job\GenerateWeeklyReportJob.class
+com\cqupt\task\YyzxTaskApplication.class
+com\cqupt\task\config\SwaggerConfig.class
+com\cqupt\task\service\FailedMailService.class
+com\cqupt\task\mapper\FailedMailRecordMapper.class

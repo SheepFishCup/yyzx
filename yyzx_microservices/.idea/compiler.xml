@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="yyzx-task" />
+        <module name="yyzx-bed" />
+        <module name="yyzx-nursing" />
+        <module name="yyzx-meal" />
+        <module name="yyzx-customer" />
+        <module name="yyzx-gateway" />
+        <module name="yyzx-checkinout" />
+        <module name="yyzx-common" />
+        <module name="yyzx-auth" />
+        <module name="yyzx-report" />
+        <module name="yyzx-notification" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>

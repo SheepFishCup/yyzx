@@ -1,0 +1,86 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /yyzx
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfiguration
+  application:
+    name: yyzx-checkinout
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      username: root
+      password: 123456
+      initial-size: 10
+      min-idle: 10
+      max-active: 25
+      max-wait: 3000
+      remove-abandoned: true
+      remove-abandoned-timeout: 300
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 2000
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+      config:
+        server-addr: localhost:8848
+        namespace: public
+        file-extension: yaml
+        enabled: false
+
+# ==================== Feign + Resilience4j 熔断降级配置 ====================
+feign:
+  circuitbreaker:
+    enabled: true              # 启用 Feign 熔断
+  client:
+    config:
+      default:
+        connect-timeout: 3000  # 连接超时 3s
+        read-timeout: 5000     # 读取超时 5s
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10      # 滑动窗口大小
+        minimum-number-of-calls: 5   # 最小调用次数才开始计算
+        failure-rate-threshold: 50   # 失败率 50% 开启熔断
+        wait-duration-in-open-state: 10s  # 熔断后 10s 尝试半开
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s         # 超时时间 5s
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*.xml
+  type-aliases-package: com.cqupt.pojo,com.cqupt.vo,com.cqupt.dto
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+yyzx:
+  jwt:
+    user-secret: cqupt123456
+    user-expire: 7200000  # 2h
+    user-token-name: token
+  internal-token: yyzx-internal-secret-2026
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

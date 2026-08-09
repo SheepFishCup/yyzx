@@ -1,0 +1,117 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: yyzx-gateway
+  redis:
+    host: ${SPRING_REDIS_HOST:redis-master}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:yourpassword}
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 5
+        max-wait: 3000ms
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        file-extension: yaml
+        enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: auth-admin
+          uri: lb://yyzx-auth
+          predicates: [Path=/admin/**]
+        - id: auth-role
+          uri: lb://yyzx-auth
+          predicates: [Path=/role/**]
+        - id: auth-menu
+          uri: lb://yyzx-auth
+          predicates: [Path=/menu/**]
+        - id: auth-rolemenu
+          uri: lb://yyzx-auth
+          predicates: [Path=/rolemenu/**]
+        - id: customer-main
+          uri: lb://yyzx-customer
+          predicates: [Path=/customer/**]
+        - id: customer-preference
+          uri: lb://yyzx-customer
+          predicates: [Path=/customerpreference/**]
+        - id: customer-nurse-item
+          uri: lb://yyzx-customer
+          predicates: [Path=/customernurseitem/**]
+        - id: customer-patient
+          uri: lb://yyzx-customer
+          predicates: [Path=/patient/**]
+        - id: bed-main
+          uri: lb://yyzx-bed
+          predicates: [Path=/bed/**]
+        - id: bed-details
+          uri: lb://yyzx-bed
+          predicates: [Path=/beddetails/**]
+        - id: bed-room
+          uri: lb://yyzx-bed
+          predicates: [Path=/room/**]
+        - id: nursing-content
+          uri: lb://yyzx-nursing
+          predicates: [Path=/nursecontent/**]
+        - id: nursing-level
+          uri: lb://yyzx-nursing
+          predicates: [Path=/nurselevel/**]
+        - id: nursing-level-item
+          uri: lb://yyzx-nursing
+          predicates: [Path=/nurselevelitem/**]
+        - id: nursing-record
+          uri: lb://yyzx-nursing
+          predicates: [Path=/nurserecord/**]
+        - id: checkinout-backdown
+          uri: lb://yyzx-checkinout
+          predicates: [Path=/backdown/**]
+        - id: checkinout-outward
+          uri: lb://yyzx-checkinout
+          predicates: [Path=/outward/**]
+        - id: meal-food
+          uri: lb://yyzx-meal
+          predicates: [Path=/food/**]
+        - id: meal-plan
+          uri: lb://yyzx-meal
+          predicates: [Path=/meal/**]
+        - id: report
+          uri: lb://yyzx-report
+          predicates: [Path=/report/**]
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+yyzx:
+  gateway:
+    jwt-secret: ${JWT_SECRET:cqupt123456}
+    exclude-paths:
+      - /admin/generate
+      - /admin/loginWithCaptcha
+      - /admin/login
+      - /admin/forgotPassword
+      - /admin/resetPassword
+      - /admin/verifyResetToken
+      - /patient/login
+      - /doc.html
+      - /webjars/**
+      - /v3/api-docs/**
+      - /swagger-resources/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /images/**
+      - /druid/**
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-N/A}] %-5level %logger{50} - %msg%n"

@@ -1,0 +1,344 @@
+version: "3.8"
+
+# ============================================================
+# 颐养中心微服务 Docker Compose 编排
+# ============================================================
+# 启动顺序: mysql → redis/rabbitmq/nacos → 微服务
+# 使用: docker-compose up -d
+# ============================================================
+
+services:
+  # ==================== 基础设施 ====================
+
+  mysql:
+    image: mysql:8.0
+    container_name: yyzx-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: yyzx
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../yyzx_backend/yyzx.sql:/docker-entrypoint-initdb.d/yyzx.sql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - yyzx-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: yyzx-redis
+    restart: always
+    command: redis-server --requirepass yourpassword --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "yourpassword", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - yyzx-net
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: yyzx-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - yyzx-net
+
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: yyzx-nacos
+    restart: always
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: nacos_config
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: 123456
+      NACOS_AUTH_ENABLE: "false"
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  # ==================== 微服务 ====================
+
+  yyzx-gateway:
+    build:
+      context: .
+      dockerfile: yyzx-gateway/Dockerfile
+    container_name: yyzx-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      JWT_SECRET: cqupt123456
+    depends_on:
+      nacos:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-auth:
+    build:
+      context: .
+      dockerfile: yyzx-auth/Dockerfile
+    container_name: yyzx-auth
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      SPRING_RABBITMQ_HOST: rabbitmq
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-customer:
+    build:
+      context: .
+      dockerfile: yyzx-customer/Dockerfile
+    container_name: yyzx-customer
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      SPRING_RABBITMQ_HOST: rabbitmq
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-bed:
+    build:
+      context: .
+      dockerfile: yyzx-bed/Dockerfile
+    container_name: yyzx-bed
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-nursing:
+    build:
+      context: .
+      dockerfile: yyzx-nursing/Dockerfile
+    container_name: yyzx-nursing
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-checkinout:
+    build:
+      context: .
+      dockerfile: yyzx-checkinout/Dockerfile
+    container_name: yyzx-checkinout
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-meal:
+    build:
+      context: .
+      dockerfile: yyzx-meal/Dockerfile
+    container_name: yyzx-meal
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      JWT_SECRET: cqupt123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-notification:
+    build:
+      context: .
+      dockerfile: yyzx-notification/Dockerfile
+    container_name: yyzx-notification
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MAIL_USERNAME: 2855733759@qq.com
+      MAIL_PASSWORD: your-mail-password
+      DINGTALK_WEBHOOK: https://oapi.dingtalk.com/robot/send?access_token=xxx
+      DINGTALK_SECRET: xxx
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-report:
+    build:
+      context: .
+      dockerfile: yyzx-report/Dockerfile
+    container_name: yyzx-report
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+  yyzx-task:
+    build:
+      context: .
+      dockerfile: yyzx-task/Dockerfile
+    container_name: yyzx-task
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/yyzx?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PASSWORD: yourpassword
+      SPRING_RABBITMQ_HOST: rabbitmq
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - yyzx-net
+
+# ==================== 存储卷 ====================
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+
+# ==================== 网络 ====================
+networks:
+  yyzx-net:
+    driver: bridge
