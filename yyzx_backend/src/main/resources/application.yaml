@@ -2,6 +2,9 @@ server:
   port: 9999
   servlet:
     context-path: /yyzx
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 # 数据库配置
 spring:
@@ -145,3 +148,18 @@ dingtalk:
 #    we-chat-pay-cert-file-path: ${yyzx.wechat.private-key-file-path}
 #    notify-url: ${yyzx.wechat.notify-url}
 #    refund-notify-url: ${yyzx.wechat.refund-notify-url}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "metrics,health,threaddump"
+  endpoint:
+    metrics:
+      enabled: true
+    health:
+      show-details: always
+  metrics:
+    enable:
+      tomcat: true
+      tomcat.threads: true

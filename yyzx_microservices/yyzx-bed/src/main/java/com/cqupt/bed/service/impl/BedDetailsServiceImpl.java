@@ -22,6 +22,7 @@ import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.BedDetailsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
@@ -43,6 +44,7 @@ public class BedDetailsServiceImpl extends ServiceImpl<BedDetailsMapper, BedDeta
     }
 
     //床位调换
+    @GlobalTransactional(name = "bed-exchange-bed", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo exchangeBed(ExchangeDTO exchangeDTO) throws Exception {

@@ -26,6 +26,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -110,6 +111,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
         }
     }
 
+    @GlobalTransactional(name = "customer-add-customer", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo<?> addCustomer(Customer customer) {
@@ -149,6 +151,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
         throw new RuntimeException("入住失败");
     }
 
+    @GlobalTransactional(name = "customer-remove-customer", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo<?> removeCustomer(Long id, Integer bedId) {
@@ -175,6 +178,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
         throw new RuntimeException("退住失败");
     }
 
+    @GlobalTransactional(name = "customer-edit-customer", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResultVo<?> editCustomer(Customer customer) {

@@ -15,6 +15,7 @@ import com.cqupt.checkinout.service.OutwardService;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.OutwardVo;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import io.seata.spring.annotation.GlobalTransactional;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class OutwardController {
         log.info("查询外出详情{}", outwardDTO);
         return outwardService.queryOutwardVo(outwardDTO);
     }
+    @GlobalTransactional(name = "checkinout-examine-outward", rollbackFor = Exception.class)
     @PostMapping("/examineOutward")
     @ApiOperation("审批外出")
     public ResultVo<?> examineOutward(Outward outward) throws Exception {

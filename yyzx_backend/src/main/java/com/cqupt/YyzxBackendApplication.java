@@ -12,7 +12,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 //@EnableDiscoveryClient
-//@EnableAsync // 开启异步
+@EnableAsync // 开启异步
 @EnableCaching // 开启缓存
 @MapperScan("com.cqupt.mapper")
 public class YyzxBackendApplication {

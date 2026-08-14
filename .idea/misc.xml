@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="JUnitGeneratorProjectSettings">
+    <option name="selectedTemplateKey" value="JUnit 4" />
+  </component>
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_backend/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_microservices/tempfile_1784535992844.xml" />
+        <option value="$PROJECT_DIR$/yyzx_microservices/yyzx-common/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_microservices/yyzx_gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_microservices/yyzx-auth-service/pom.xml" />
+      </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/yyzx_microservices/tempfile_1784535992844.xml" />
+      </set>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK" />
+</project>

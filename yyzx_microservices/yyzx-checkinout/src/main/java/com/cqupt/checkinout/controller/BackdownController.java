@@ -11,6 +11,7 @@ import com.cqupt.pojo.Customer;
 import com.cqupt.checkinout.service.BackdownService;
 import com.cqupt.utils.ResultVo;
 import com.cqupt.vo.BackdownVo;
+import io.seata.spring.annotation.GlobalTransactional;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ public class BackdownController {
         return backdownService.listBackdownVo(backdownDTO);
     }
 
+    @GlobalTransactional(name = "checkinout-examine-backdown", rollbackFor = Exception.class)
     @PostMapping("/examineBackdown")
     @ApiOperation("审批退住")
     public ResultVo<?> examineBackdown(Backdown backdown) throws Exception {

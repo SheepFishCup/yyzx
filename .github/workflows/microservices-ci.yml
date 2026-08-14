@@ -1,0 +1,68 @@
+name: YYZX Microservices CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'yyzx_microservices/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'yyzx_microservices/**'
+
+env:
+  MAVEN_OPTS: "-Dmaven.repo.local=${{ github.workspace }}/.m2/repository"
+
+jobs:
+  build:
+    name: Build & Test All Modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup JDK 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('yyzx_microservices/pom.xml', 'yyzx_microservices/**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Install parent POM
+        working-directory: yyzx_microservices
+        run: mvn clean install -N -DskipTests -B
+
+      - name: Install common module
+        working-directory: yyzx_microservices
+        run: mvn clean install -pl yyzx-common -DskipTests -B
+
+      - name: Build all modules (skip tests)
+        working-directory: yyzx_microservices
+        run: mvn clean package -DskipTests -B
+
+      - name: Run tests (H2 in-memory, offline)
+        working-directory: yyzx_microservices
+        run: mvn test -B
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-jars
+          path: yyzx_microservices/*/target/*.jar
+          retention-days: 7
+
+      - name: Test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Maven Tests
+          path: yyzx_microservices/*/target/surefire-reports/*.xml
+          reporter: java-junit

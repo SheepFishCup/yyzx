@@ -46,7 +46,7 @@ start_service() {
     echo -e "${GREEN}[INFO] 启动 $service_name (:$port)...${NC}"
     cd "$PROJECT_DIR/$module"
 
-    local JVM_OPTS="-Xms256m -Xmx512m"
+    local JVM_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs/heapdump.hprof -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m -Xss512k -XX:+DisableExplicitGC -Dfile.encoding=UTF-8"
 
     if check_agent; then
         JVM_OPTS="-javaagent:$SW_AGENT_JAR -Dskywalking.agent.service_name=$service_name -Dskywalking.collector.backend_service=$SW_BACKEND $JVM_OPTS"

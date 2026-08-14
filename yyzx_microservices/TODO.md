@@ -157,7 +157,7 @@
 |---|------|------|------|
 | 1 | 共享数据库 | ⬜ 进行中 | Feign 16 个端点全覆盖，task/notification/checkinout 已清理 Mapper |
 | 2 | Mapper 跨模块重复 | ✅ 已修复 | 3 轮共清理 34 个冗余文件（task/notification/checkinout/customer/bed/nursing） |
-| 3 | 无分布式事务 | ⬜ 待解决 | 需 Seata 或 Saga 模式 |
+| 3 | 无分布式事务 | ✅ 已修复 | Seata AT 模式 + `@GlobalTransactional` × 5 处 + undo_log SQL |
 | 4 | Gateway JWT Redis 依赖 | ✅ 已修复 | 改为纯 JWT 签名无状态认证 |
 | 5 | 无链路追踪 | ✅ 已修复 | SkyWalking Agent 接入 gateway/auth/customer |
 | 6 | `/internal/**` 端点无认证 | ✅ 已修复 | `InternalAuthInterceptor` + `FeignRequestInterceptor` 共享密钥机制 |
@@ -182,8 +182,8 @@
 - [ ] 邮件密码改为环境变量，不写入配置文件
 - [ ] 钉钉 Webhook Secret 改为环境变量
 - [ ] Nacos 开启认证（`NACOS_AUTH_ENABLE=true`）
-- [ ] Gateway 添加请求频率限制（Rate Limiter）
-- [ ] 敏感接口添加操作审计日志
+- [x] Gateway 添加请求频率限制 ✅ Sentinel QPS 限流已实现
+- [x] 敏感接口添加操作审计日志 ✅ RabbitMQ LogMessage 异步审计（create/remove/edit 操作全记录）
 
 ---
 
@@ -203,12 +203,12 @@
 
 ### 5.1 短期（1-2 周）
 
-1. 完成上述"必须手动配置的项"全部勾选
-2. 完成"需要验证的功能点"全部测试通过
-3. 编写核心 Service 的业务逻辑单元测试
-4. 配置 CI/CD 流水线（GitHub Actions / Jenkins）
-5. 启动 Sentinel Dashboard 并在控制台配置 Gateway QPS 规则
-6. 下载 SkyWalking Agent 验证 TraceId 在日志中的传递
+1. ⬜ 完成"必须手动配置的项"全部勾选（用户自配：数据库密码/邮件/钉钉/微信）
+2. ✅ 完成"需要验证的功能点"全部测试通过（10 服务全部验证）
+3. ⬜ 编写核心 Service 的业务逻辑单元测试（用户自测）
+4. ✅ 配置 CI/CD 流水线 — `.github/workflows/microservices-ci.yml`（构建+测试+报告）
+5. ⬜ 启动 Sentinel Dashboard 并在控制台配置 Gateway QPS 规则
+6. ✅ SkyWalking Agent 验证 TraceId 在日志中的传递（`[%X{traceId}]` 已生效）
 
 ### 5.2 中期（1-2 月）
 

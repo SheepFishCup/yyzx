@@ -121,6 +121,18 @@
                 <version>2.1.7</version>
             </dependency>
 
+            <!-- ======== Seata 分布式事务 ======== -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.seata</groupId>
+                <artifactId>seata-spring-boot-starter</artifactId>
+                <version>1.5.2</version>
+            </dependency>
+
             <!-- ======== 数据库 ======== -->
             <dependency>
                 <groupId>mysql</groupId>

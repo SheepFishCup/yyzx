@@ -20,7 +20,7 @@ ENV SW_AGENT_ENABLED=${SW_AGENT_ENABLED} \
 
 COPY --from=builder /build/yyzx-gateway/target/*.jar app.jar
 EXPOSE 8080
-ENV JAVA_OPTS="-Xms256m -Xmx512m -Duser.timezone=GMT+8"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/heapdump.hprof -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m -Xss512k -XX:+DisableExplicitGC -Dfile.encoding=UTF-8 -Duser.timezone=GMT+8"
 ENTRYPOINT ["sh", "-c", "\
   if [ \"$SW_AGENT_ENABLED\" = \"true\" ] && [ -f /skywalking/skywalking-agent.jar ]; then \
     echo '[INFO] Starting with SkyWalking Agent: service=$SW_AGENT_NAME backend=$SW_BACKEND'; \

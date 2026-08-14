@@ -14,5 +14,5 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
 COPY --from=builder /build/yyzx-task/target/*.jar app.jar
 EXPOSE 8089
-ENV JAVA_OPTS="-Xms256m -Xmx512m -Duser.timezone=GMT+8"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/heapdump.hprof -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m -Xss512k -XX:+DisableExplicitGC -Dfile.encoding=UTF-8 -Duser.timezone=GMT+8"
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

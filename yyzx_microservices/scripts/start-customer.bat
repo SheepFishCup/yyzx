@@ -11,5 +11,5 @@ if exist "%AGENT_JAR%" (
 
 cd /d "%~dp0..\yyzx-customer"
 echo [INFO] Starting yyzx-customer :8082
-call mvn spring-boot:run -Dspring-boot.run.jvmArguments="!AGENT_OPTS! -Xms256m -Xmx512m"
+call mvn spring-boot:run -Dspring-boot.run.jvmArguments="!AGENT_OPTS! -Xms512m -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs/heapdump.hprof -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m -Xss512k -XX:+DisableExplicitGC -Dfile.encoding=UTF-8"
 endlocal
